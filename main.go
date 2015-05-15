@@ -52,7 +52,8 @@ func LogHttp(r *http.Request) {
 
 func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
 	log.Printf("Returned error \"%s\" (HTTP %s) to %s", err.Error(), http.StatusText(status), r.RemoteAddr)
-	http.Error(w, err.Error(), status)
+	serialErr, _ := json.Marshal(err.Error())
+	http.Error(w, string(serialErr), status)
 }
 
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
