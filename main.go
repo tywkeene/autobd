@@ -32,7 +32,6 @@ func GetManifest(dirPath string) (map[string]*File, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	manifest := make(map[string]*File)
 	for _, child := range list {
 		childPath := path.Join(dirPath, child.Name())
@@ -63,7 +62,6 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 		LogHttpErr(w, r, err, http.StatusInternalServerError)
 		return ""
 	}
-
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
 		LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
@@ -73,9 +71,7 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 }
 
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
 	LogHttp(r)
-
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		LogHttpErr(w, r, errors.New("Must specify directory"), http.StatusBadRequest)
@@ -87,14 +83,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
-
-	elapsed := time.Since(start)
-	log.Printf("-->\tServeManifest(%s) enumeration and marshaling took %s", dir, elapsed)
-
-	writeStart := time.Now()
 	io.WriteString(w, string(serial))
-	writeElapsed := time.Since(writeStart)
-	log.Printf("-->\tServeManifest(%s) write json took %s", dir, writeElapsed)
 }
 
 func main() {
