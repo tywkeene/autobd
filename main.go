@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -74,7 +73,6 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	LogHttp(r)
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
-		LogHttpErr(w, r, errors.New("Must specify directory"), http.StatusBadRequest)
 		return
 	}
 	manifest, err := GetManifest(dir)
