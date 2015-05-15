@@ -14,43 +14,35 @@ import (
 	"time"
 )
 
-type Manifest struct {
-	Contents map[string]*File
-}
-
 type File struct {
-	Name     string      `json:"name"`
-	Size     int64       `json:"size"`
-	ModTime  time.Time   `json:"lastModified"`
-	Mode     os.FileMode `json:"fileMode"`
-	IsDir    bool        `json:"isDir"`
-	Manifest *Manifest   `json:"manifest,omitempty"`
-}
-
-func NewManifest(dirPath string) *Manifest {
-	return &Manifest{make(map[string]*File)}
+	Name     string           `json:"name"`
+	Size     int64            `json:"size"`
+	ModTime  time.Time        `json:"lastModified"`
+	Mode     os.FileMode      `json:"fileMode"`
+	IsDir    bool             `json:"isDir"`
+	Manifest map[string]*File `json:"manifest,omitempty"`
 }
 
 func NewFile(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *File {
 	return &File{name, size, modtime, mode, isDir, nil}
 }
 
-func GetManifest(dirPath string) (*Manifest, error) {
+func GetManifest(dirPath string) (map[string]*File, error) {
 	list, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	manifest := NewManifest(dirPath)
+	manifest := make(map[string]*File)
 	for _, child := range list {
 		childPath := path.Join(dirPath, child.Name())
-		manifest.Contents[childPath] = NewFile(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
+		manifest[childPath] = NewFile(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
 		if child.IsDir() == true {
 			childContent, err := GetManifest(childPath)
 			if err != nil {
 				return nil, err
 			}
-			manifest.Contents[childPath].Manifest = childContent
+			manifest[childPath].Manifest = childContent
 		}
 	}
 	return manifest, nil
