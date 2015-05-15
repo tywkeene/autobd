@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -43,7 +44,6 @@ func GetManifest(dirPath string) (*Manifest, error) {
 	manifest := NewManifest(dirPath)
 	for _, child := range list {
 		childPath := path.Join(dirPath, child.Name())
-		log.Println(child.Mode())
 		manifest.Contents[childPath] = NewFile(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
 		if child.IsDir() == true {
 			childContent, err := GetManifest(childPath)
@@ -86,6 +86,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
+		LogHttpErr(w, r, errors.New("Must specify directory"), http.StatusBadRequest)
 		return
 	}
 	manifest, err := GetManifest(dir)
@@ -105,6 +106,6 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/manifest", ServeManifest)
+	http.HandleFunc("/v0/manifest", ServeManifest)
 	log.Panic(http.ListenAndServe(":8080", nil))
 }
