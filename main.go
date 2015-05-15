@@ -21,9 +21,9 @@ type Manifest struct {
 type File struct {
 	Name     string      `json:"name"`
 	Size     int64       `json:"size"`
-	ModTime  time.Time   `json:"last_modified"`
-	Mode     os.FileMode `json:"filemode"`
-	IsDir    bool        `json:"is_dir"`
+	ModTime  time.Time   `json:"lastModified"`
+	Mode     os.FileMode `json:"fileMode"`
+	IsDir    bool        `json:"isDir"`
 	Manifest *Manifest   `json:"manifest,omitempty"`
 }
 
