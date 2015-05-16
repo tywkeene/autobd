@@ -22,6 +22,12 @@ type File struct {
 	Manifest map[string]*File `json:"manifest,omitempty"`
 }
 
+var (
+	apiVersion string = "v0"
+	version    string = "0.1"
+	commit     string
+)
+
 func NewFile(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *File {
 	return &File{name, size, modtime, mode, isDir, nil}
 }
@@ -87,7 +93,15 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serial))
 }
 
+func versionInfo() {
+	if commit == "" {
+		commit = "unknown"
+	}
+	fmt.Printf("Autobd version %s (API %s) (git commit %s)\n", version, apiVersion, commit)
+}
+
 func main() {
-	http.HandleFunc("/v0/manifest", ServeManifest)
+	versionInfo()
+	http.HandleFunc("/"+apiVersion+"/manifest", ServeManifest)
 	log.Panic(http.ListenAndServe(":8080", nil))
 }
