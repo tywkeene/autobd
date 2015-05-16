@@ -116,9 +116,15 @@ func versionInfo() {
 	fmt.Printf("Autobd version %s (API %s) (git commit %s)\n", version, apiVersion, commit)
 }
 
+func setupRoutes() {
+	http.HandleFunc("/"+apiVersion+"/manifest", compression.MakeGzipHandler(ServeManifest))
+	http.HandleFunc("/version", compression.MakeGzipHandler(ServeVersion))
+}
+
 func init() {
 	versionInfo()
 	options.GetOptions()
+	setupRoutes()
 }
 
 func main() {
@@ -128,9 +134,6 @@ func main() {
 	if err := os.Chdir(*options.Flags.Root); err != nil {
 		panic(err)
 	}
-
-	http.HandleFunc("/"+apiVersion+"/manifest", compression.MakeGzipHandler(ServeManifest))
-	http.HandleFunc("/version", compression.MakeGzipHandler(ServeVersion))
 	log.Printf("Serving '%s' on port %s", *options.Flags.Root, *options.Flags.ApiPort)
 	log.Panic(http.ListenAndServe(":"+*options.Flags.ApiPort, nil))
 }
