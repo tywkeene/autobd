@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SaviorPhoenix/autobd/compression"
 	"github.com/SaviorPhoenix/autobd/options"
 	"io"
 	"io/ioutil"
@@ -129,8 +130,8 @@ func main() {
 		panic(err)
 	}
 
-	http.HandleFunc("/"+apiVersion+"/manifest", ServeManifest)
-	http.HandleFunc("/version", ServeVersion)
+	http.HandleFunc("/"+apiVersion+"/manifest", compression.MakeGzipHandler(ServeManifest))
+	http.HandleFunc("/version", compression.MakeGzipHandler(ServeVersion))
 	log.Printf("Serving '%s' on port %s", *options.Flags.Root, *options.Flags.ApiPort)
 	log.Panic(http.ListenAndServe(":"+*options.Flags.ApiPort, nil))
 }
