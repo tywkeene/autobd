@@ -98,10 +98,11 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 
 func ServeVersion(w http.ResponseWriter, r *http.Request) {
 	type versionInfo struct {
-		Ver string `json:"server"`
-		Api string `json:"api"`
+		Ver    string `json:"server"`
+		Api    string `json:"api"`
+		Commit string `json:"commit"`
 	}
-	serialVer, _ := json.MarshalIndent(&versionInfo{version, apiVersion}, "  ", "  ")
+	serialVer, _ := json.MarshalIndent(&versionInfo{version, apiVersion, commit}, "  ", "  ")
 	io.WriteString(w, string(serialVer))
 }
 
