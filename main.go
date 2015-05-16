@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SaviorPhoenix/autobd/options"
 	"io"
 	"io/ioutil"
 	"log"
@@ -100,8 +101,13 @@ func versionInfo() {
 	fmt.Printf("Autobd version %s (API %s) (git commit %s)\n", version, apiVersion, commit)
 }
 
-func main() {
+func init() {
 	versionInfo()
+	options.GetOptions()
+}
+
+func main() {
 	http.HandleFunc("/"+apiVersion+"/manifest", ServeManifest)
-	log.Panic(http.ListenAndServe(":8080", nil))
+	log.Printf("Serving '%s' on port %s", *options.Flags.Root, *options.Flags.ApiPort)
+	log.Panic(http.ListenAndServe(":"+*options.Flags.ApiPort, nil))
 }
