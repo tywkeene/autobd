@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"syscall"
 	"time"
 )
 
@@ -107,6 +108,15 @@ func init() {
 }
 
 func main() {
+	if err := syscall.Chroot(*options.Flags.Root); err != nil {
+		fmt.Println("chroot:", err)
+		os.Exit(-1)
+	}
+	if err := os.Chdir(*options.Flags.Root); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
 	http.HandleFunc("/"+apiVersion+"/manifest", ServeManifest)
 	log.Printf("Serving '%s' on port %s", *options.Flags.Root, *options.Flags.ApiPort)
 	log.Panic(http.ListenAndServe(":"+*options.Flags.ApiPort, nil))
