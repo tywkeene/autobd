@@ -82,6 +82,8 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
+	w.Header().Set("Content-Encoding", "gzip")
+	w.Header().Set("Content-Type", "application/json")
 	io.WriteString(w, string(serial))
 }
 
