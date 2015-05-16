@@ -96,6 +96,15 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serial))
 }
 
+func ServeVersion(w http.ResponseWriter, r *http.Request) {
+	type versionInfo struct {
+		Ver string `json:"server"`
+		Api string `json:"api"`
+	}
+	serialVer, _ := json.MarshalIndent(&versionInfo{version, apiVersion}, "  ", "  ")
+	io.WriteString(w, string(serialVer))
+}
+
 func versionInfo() {
 	if commit == "" {
 		commit = "unknown"
@@ -119,6 +128,7 @@ func main() {
 	}
 
 	http.HandleFunc("/"+apiVersion+"/manifest", ServeManifest)
+	http.HandleFunc("/version", ServeVersion)
 	log.Printf("Serving '%s' on port %s", *options.Flags.Root, *options.Flags.ApiPort)
 	log.Panic(http.ListenAndServe(":"+*options.Flags.ApiPort, nil))
 }
