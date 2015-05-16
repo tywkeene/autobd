@@ -104,7 +104,6 @@ func ServeVersion(w http.ResponseWriter, r *http.Request) {
 		Commit string `json:"commit"`
 	}
 	serialVer, _ := json.MarshalIndent(&versionInfo{version, apiVersion, commit}, "  ", "  ")
-	w.Header().Set("Content-Encoding", "gzip")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version)
 	io.WriteString(w, string(serialVer))
