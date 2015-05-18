@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SaviorPhoenix/autobd/compression"
+	"github.com/SaviorPhoenix/autobd/helpers"
 	"github.com/SaviorPhoenix/autobd/options"
 	"io"
 	"io/ioutil"
@@ -55,39 +56,29 @@ func GetManifest(dirPath string) (map[string]*File, error) {
 	return manifest, nil
 }
 
-func LogHttp(r *http.Request) {
-	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
-}
-
-func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
-	log.Printf("Returned error \"%s\" (HTTP %s) to %s", err.Error(), http.StatusText(status), r.RemoteAddr)
-	serialErr, _ := json.Marshal(err.Error())
-	http.Error(w, string(serialErr), status)
-}
-
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
-		LogHttpErr(w, r, err, http.StatusInternalServerError)
+		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
 		return ""
 	}
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
-		LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
+		helpers.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
 		return ""
 	}
 	return value
 }
 
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
-	LogHttp(r)
+	helpers.LogHttp(r)
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		return
 	}
 	manifest, err := GetManifest(dir)
 	if err != nil {
-		LogHttpErr(w, r, err, http.StatusInternalServerError)
+		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
 		return
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
