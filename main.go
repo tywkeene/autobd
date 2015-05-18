@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/SaviorPhoenix/autobd/compression"
 	"github.com/SaviorPhoenix/autobd/helpers"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -94,9 +96,19 @@ func versionInfo() {
 	fmt.Printf("Autobd version %s (API %s) (git commit %s)\n", version, apiVersion, commit)
 }
 
+func FilterUserAgent(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.UserAgent(), "Autobd") {
+			helpers.LogHttpErr(w, r, errors.New("Invalid user-agent"), http.StatusForbidden)
+		} else {
+			fn(w, r)
+		}
+	}
+}
+
 func setupRoutes() {
-	http.HandleFunc("/"+apiVersion+"/manifest", compression.MakeGzipHandler(ServeManifest))
-	http.HandleFunc("/version", compression.MakeGzipHandler(ServeVersion))
+	http.HandleFunc("/"+apiVersion+"/manifest", FilterUserAgent(compression.MakeGzipHandler(ServeManifest)))
+	http.HandleFunc("/version", FilterUserAgent(compression.MakeGzipHandler(ServeVersion)))
 }
 
 func init() {
