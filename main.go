@@ -8,24 +8,12 @@ import (
 	"github.com/SaviorPhoenix/autobd/helpers"
 	"github.com/SaviorPhoenix/autobd/options"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"syscall"
-	"time"
 )
-
-type File struct {
-	Name     string           `json:"name"`
-	Size     int64            `json:"size"`
-	ModTime  time.Time        `json:"lastModified"`
-	Mode     os.FileMode      `json:"fileMode"`
-	IsDir    bool             `json:"isDir"`
-	Manifest map[string]*File `json:"manifest,omitempty"`
-}
 
 var (
 	apiVersion string = "v0"
@@ -33,37 +21,13 @@ var (
 	commit     string
 )
 
-func NewFile(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *File {
-	return &File{name, size, modtime, mode, isDir, nil}
-}
-
-func GetManifest(dirPath string) (map[string]*File, error) {
-	list, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-	manifest := make(map[string]*File)
-	for _, child := range list {
-		childPath := path.Join(dirPath, child.Name())
-		manifest[childPath] = NewFile(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
-		if child.IsDir() == true {
-			childContent, err := GetManifest(childPath)
-			if err != nil {
-				return nil, err
-			}
-			manifest[childPath].Manifest = childContent
-		}
-	}
-	return manifest, nil
-}
-
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	helpers.LogHttp(r)
 	dir := helpers.GetQueryValue("dir", w, r)
 	if dir == "" {
 		return
 	}
-	manifest, err := GetManifest(dir)
+	manifest, err := helpers.GetManifest(dir)
 	if err != nil {
 		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
 		return
