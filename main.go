@@ -51,6 +51,15 @@ func ServeVersion(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serialVer))
 }
 
+func ServeSync(w http.ResponseWriter, r *http.Request) {
+	helpers.LogHttp(r)
+	grab := helpers.GetQueryValue("grab", w, r)
+	if grab == "" {
+		return
+	}
+	http.ServeFile(w, r, grab)
+}
+
 func versionInfo() {
 	if commit == "" {
 		commit = "unknown"
@@ -60,6 +69,7 @@ func versionInfo() {
 
 func setupRoutes() {
 	http.HandleFunc("/"+apiVersion+"/manifest", compression.MakeGzipHandler(ServeManifest))
+	http.HandleFunc("/"+apiVersion+"/sync", compression.MakeGzipHandler(ServeSync))
 	http.HandleFunc("/version", compression.MakeGzipHandler(ServeVersion))
 }
 
