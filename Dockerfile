@@ -2,7 +2,8 @@ FROM ubuntu
 
 MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
 
-RUN apt-get update && apt-get install -y golang-go git
+RUN apt-get update 
+RUN apt-get install -y golang-go git
 RUN mkdir /root/go
 
 ENV GOPATH=/root/go
