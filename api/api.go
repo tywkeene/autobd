@@ -3,10 +3,12 @@ package api
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/SaviorPhoenix/autobd/helpers"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -78,7 +80,23 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	if grab == "" {
 		return
 	}
-	http.ServeFile(w, r, grab)
+	fd, err := os.Open(grab)
+	if err != nil {
+		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	defer fd.Close()
+	info, err := fd.Stat()
+	if err != nil {
+		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	if info.IsDir() == true {
+		helpers.LogHttpErr(w, r, errors.New("Directory transfer not implemented"),
+			http.StatusNotImplemented)
+		return
+	}
+	http.ServeContent(w, r, grab, info.ModTime(), fd)
 }
 
 func VersionInfo(commitStr string) {
