@@ -24,6 +24,13 @@ type gzipResponseWriter struct {
 	http.ResponseWriter
 }
 
+type VersionInfo struct {
+	Ver     string `json:"server"`
+	Api     string `json:"api"`
+	Commit  string `json:"commit"`
+	Comment string `json:"comment"`
+}
+
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -60,13 +67,8 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeVersion(w http.ResponseWriter, r *http.Request) {
-	type versionInfo struct {
-		Ver     string `json:"server"`
-		Api     string `json:"api"`
-		Commit  string `json:"commit"`
-		Comment string `json:"comment"`
-	}
-	serialVer, _ := json.MarshalIndent(&versionInfo{Version, ApiVersion, Commit,
+	helpers.LogHttp(r)
+	serialVer, _ := json.MarshalIndent(&VersionInfo{Version, ApiVersion, Commit,
 		"API not intended for human consumption"}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -99,7 +101,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
 }
 
-func VersionInfo(commitStr string) {
+func PrintVersionInfo(commitStr string) {
 	if commitStr == "" {
 		commitStr = "unknown"
 	}

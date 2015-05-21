@@ -13,7 +13,7 @@ import (
 var commit string
 
 func init() {
-	api.VersionInfo(commit)
+	api.PrintVersionInfo(commit)
 	options.GetOptions()
 	api.SetupRoutes()
 }
