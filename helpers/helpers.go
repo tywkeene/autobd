@@ -3,23 +3,10 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
-	"time"
 )
-
-type File struct {
-	Name     string           `json:"name"`
-	Size     int64            `json:"size"`
-	ModTime  time.Time        `json:"lastModified"`
-	Mode     os.FileMode      `json:"fileMode"`
-	IsDir    bool             `json:"isDir"`
-	Manifest map[string]*File `json:"manifest,omitempty"`
-}
 
 func LogHttp(r *http.Request) {
 	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
@@ -43,28 +30,4 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 	return value
-}
-
-func NewFile(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *File {
-	return &File{name, size, modtime, mode, isDir, nil}
-}
-
-func GetManifest(dirPath string) (map[string]*File, error) {
-	list, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-	manifest := make(map[string]*File)
-	for _, child := range list {
-		childPath := path.Join(dirPath, child.Name())
-		manifest[childPath] = NewFile(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
-		if child.IsDir() == true {
-			childContent, err := GetManifest(childPath)
-			if err != nil {
-				return nil, err
-			}
-			manifest[childPath].Manifest = childContent
-		}
-	}
-	return manifest, nil
 }
