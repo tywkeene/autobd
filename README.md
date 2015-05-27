@@ -34,6 +34,17 @@ To run autobd, simply do: `sudo ./autobd -root /path/to/directory/` in the autob
 
 Autobd will listen on port `8081` by default and will be chrooted into the directory passed to -root
 
+###Dockerfile
+
+Autobd ships with a Dockerfile. You'll of course need [docker](https://docs.docker.com/installation/) to build and run
+the image.
+
+After you have docker up and running do `docker build -t autobd:latest .` in the autobd directory
+
+and to run `docker run -p 8081:80801 -e "ROOTDIR=/data" autobd:latest`
+
+NOTE: I'm still working on the dockerfile, so there is no volume mounting yet.
+
 ## The API
 
 There are currently two functional endpoints to worry about
