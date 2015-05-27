@@ -10,6 +10,7 @@ before_script:
     - go get github.com/constabulary/gb/...
     - cd $GOPATH/src/github.com/constabulary/gb
     - go install -v -a ./...
+    - cd $TRAVIS_BUILD_DIR
 
 script:
     - ./build.sh
