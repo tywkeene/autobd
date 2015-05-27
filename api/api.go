@@ -16,7 +16,7 @@ import (
 
 const (
 	ApiVersion string = "v0"
-	Version    string = "0.1"
+	Version    string = "0.0.1"
 )
 
 var Commit string
