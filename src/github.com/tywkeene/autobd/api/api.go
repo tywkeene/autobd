@@ -4,7 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/SaviorPhoenix/autobd/helpers"
+	"github.com/tywkeene/autobd/helpers"
 	"io"
 	"io/ioutil"
 	"net/http"

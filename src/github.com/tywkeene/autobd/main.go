@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/SaviorPhoenix/autobd/api"
-	"github.com/SaviorPhoenix/autobd/options"
+	"github.com/tywkeene/autobd/api"
+	"github.com/tywkeene/autobd/options"
 	"log"
 	"net/http"
 	"os"
