@@ -58,7 +58,7 @@ The sync endpoint will transfer (or tarball and transfer, in the case of directo
 The last endpoint is `/version`, it simply returns a json encoded struct containing the version information about
 the server and API.
 
-autobd supported gzip compression and all replies are gzip'd by default.
+autobd supports gzip compression and all replies are gzip'd by default.
 ```
 $ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | gzip -d 
 {
