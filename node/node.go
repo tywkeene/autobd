@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SaviorPhoenix/autobd/api"
+	"github.com/SaviorPhoenix/autobd/helpers"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -86,18 +88,23 @@ func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) 
 	return manifest, nil
 }
 
-func RequestSync(seed string, file string) ([]byte, error) {
+func RequestSync(seed string, file string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, seed)
 	url := seed + "/" + api.ApiVersion + "/sync?grab=" + file
 	resp, err := Get(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
-	buffer, err := DeflateResponse(resp)
-	if err != nil {
-		return nil, err
+	if resp.Header.Get("Content-Type") == "application/x-tar" {
+		err := helpers.UnpackDir(resp.Body)
+		if err != nil && err == io.EOF {
+			return nil
+		} else {
+			return err
+		}
 	}
-	return buffer, nil
+	err = helpers.WriteFile(file, resp.Body)
+	return err
 }

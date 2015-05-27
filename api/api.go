@@ -129,6 +129,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if info.IsDir() == true {
+		w.Header().Set("Content-Type", "application/x-tar")
 		if err := helpers.PackDir(grab, w); err != nil {
 			helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
 			return

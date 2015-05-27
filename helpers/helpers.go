@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,6 +35,65 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 	return value
+}
+
+func WriteFile(filename string, source io.Reader) error {
+	writer, err := os.Create(filename)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer writer.Close()
+
+	gr, err := gzip.NewReader(source)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+
+	io.Copy(writer, gr)
+	return nil
+}
+
+func UnpackDir(source io.Reader) error {
+	//Unzip the contents first
+	gr, err := gzip.NewReader(source)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+	tr := tar.NewReader(gr)
+
+	for {
+		header, err := tr.Next()
+		if err != nil {
+			return err
+		} else if err == io.EOF {
+			break
+		}
+
+		filename := header.Name
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			err := os.MkdirAll(filename, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			writer, err := os.Create(filename)
+			if err != nil {
+				return err
+			}
+
+			io.Copy(writer, tr)
+			if err = os.Chmod(filename, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+			writer.Close()
+		}
+	}
+	return nil
 }
 
 //addTarFile() and PackDir() are from https://github.com/pivotal-golang/archiver
