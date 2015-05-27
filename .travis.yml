@@ -3,6 +3,9 @@ language: go
 go:
     - 1.4.2
 
+before_script:
+    - cd src/github.com/SaviorPhoenix/autobd
+
 script:
     - ./build.sh
 
