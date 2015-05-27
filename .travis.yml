@@ -4,8 +4,7 @@ go:
     - 1.4.2
 
 install:
-    - cd src/github.com/SaviorPhoenix/autobd/
-    - go get -v -a ./...
+    -
 
 script:
     - ./build.sh
