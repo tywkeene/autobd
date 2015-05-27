@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path"
 )
 
 func Get(url string) (*http.Response, error) {
@@ -102,6 +104,14 @@ func RequestSync(seed string, file string) error {
 		if err != nil && err == io.EOF {
 			return nil
 		} else {
+			return err
+		}
+	}
+
+	//make sure we create the directory tree if it's needed
+	if tree := path.Dir(file); tree != "" {
+		err := os.MkdirAll(tree, 0777)
+		if err != nil {
 			return err
 		}
 	}
