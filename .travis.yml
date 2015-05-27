@@ -6,6 +6,11 @@ go:
 install:
     -
 
+before_script:
+    - go get github.com/constabulary/gb/...
+    - cd $GOPATH/src/github.com/constabulary/gb
+    - go install -v -a ./...
+
 script:
     - ./build.sh
 
