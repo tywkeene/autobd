@@ -1,4 +1,5 @@
 ![autobd] (logo.png?raw=true "autobd")
+
 autobd is a high-level replicated filesystem daemon.
 
 [![Stories in Ready](https://badge.waffle.io/tywkeene/autobd.svg?label=ready&title=Ready)](http://waffle.io/tywkeene/autobd)
