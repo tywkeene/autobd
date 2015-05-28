@@ -1,5 +1,4 @@
+autobd
 test
 *.swp
 *.swo
-bin/
-pkg/
