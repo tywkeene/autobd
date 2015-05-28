@@ -41,9 +41,15 @@ the image.
 
 After you have docker up and running do `docker build -t autobd:latest .` in the autobd directory
 
-and to run `docker run -p 8081:80801 -e "ROOTDIR=/data" autobd:latest`
+and to run `docker run --name autobd -p 8081:8081 -v /path/to/data:/data autobd:latest`
 
-NOTE: I'm still working on the dockerfile, so there is no volume mounting yet.
+This will run the autobd docker image you just built in a container called `autobd` with the data directory you passed
+to the `-v` flag. 
+
+Autobd will listen for connections on the port specified on the left side of the `:` in the `-p` flag.
+i.e `-p 123:8081` will cause the container to listen on port `123`.
+
+Same goes for the `-v` flag: `-v /a/b/c:/data` will mount `/a/b/c` (on the host) to `/data/` inside the container
 
 ## The API
 
