@@ -6,6 +6,9 @@ go:
 script:
     - ./build.sh
 
+after_script:
+    - ./autobd -h
+
 notifications:
     email:
         recipients:
