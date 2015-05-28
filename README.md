@@ -1,5 +1,5 @@
-# autobd
-Autobd is a high-level replicated filesystem daemon.
+![autobd] (logo.png?raw=true "autobd")
+autobd is a high-level replicated filesystem daemon.
 
 [![Stories in Ready](https://badge.waffle.io/tywkeene/autobd.svg?label=ready&title=Ready)](http://waffle.io/tywkeene/autobd)
 [![Build Status](https://travis-ci.org/tywkeene/autobd.svg)](https://travis-ci.org/tywkeene/autobd)
@@ -44,7 +44,7 @@ After you have docker up and running do `docker build -t autobd:latest .` in the
 and to run `docker run --name autobd -p 8081:8081 -v /path/to/data:/data autobd:latest`
 
 This will run the autobd docker image you just built in a container called `autobd` with the data directory you passed
-to the `-v` flag. 
+to the `-v` flag.
 
 Autobd will listen for connections on the port specified on the left side of the `:` in the `-p` flag.
 i.e `-p 123:8081` will cause the container to listen on port `123`.
@@ -66,7 +66,7 @@ the server and API.
 
 autobd supports gzip compression and all replies are gzip'd by default.
 ```
-$ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | gzip -d 
+$ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | gzip -d
 {
     "/a/d": {
       "name": "/a/d",
@@ -89,6 +89,5 @@ $ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | g
 
 ## Contributing
 
-Open a pull request or issue with your idea or bug. Really. Anything wrong with anything anywhere, open a ticket and let me know, 
-then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/tywkeene/autobd) before creating a new ticket) 
-
+Open a pull request or issue with your idea or bug. Really. Anything wrong with anything anywhere, open a ticket and let me know,
+then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/tywkeene/autobd) before creating a new ticket)
