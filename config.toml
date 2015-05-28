@@ -1,0 +1,12 @@
+#Which directory to serve
+root_dir = "test"
+
+#The port the API will listen on
+api_port = "8081"
+
+#Run as a node
+run_as_node = false
+
+#What server to communicate with IP/URL
+#(required when running as a node)
+seed_server = "http://url"
