@@ -9,6 +9,8 @@ RUN go build -v -x -ldflags "-X main.commit $(git rev-parse --short=10 HEAD)"
 
 WORKDIR /
 
-EXPOSE 8081
+RUN mkdir /data
+VOLUME /data
 
-ENTRYPOINT .$GOPATH/src/github.com/tywkeene/autobd/autobd -root=$ROOTDIR
+EXPOSE 8081
+ENTRYPOINT ./$GOPATH/src/github.com/tywkeene/autobd/autobd -root data
