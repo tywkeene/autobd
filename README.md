@@ -84,5 +84,5 @@ $ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | g
 ## Contributing
 
 Open a pull request or issue with your idea or bug. Really. Anything wrong with anything anywhere, open a ticket and let me know, 
-then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/saviorphoenix/autobd) before creating a new ticket) 
+then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/tywkeene/autobd) before creating a new ticket) 
 
