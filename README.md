@@ -10,11 +10,11 @@ stick with at least 1.4.2 as that's what I'm developing on.
 
 After you have go installed, it's as simple as either cloning the git repo:
 
-`git clone https://github.com/SaviorPhoenix/autobd`
+`git clone https://github.com/tywkeene/autobd`
 
 or using go get:
 
-`go get github.com/SaviorPhoenix/autobd`
+`go get github.com/tywkeene/autobd`
 
 and to build
 
