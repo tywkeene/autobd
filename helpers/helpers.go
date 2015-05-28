@@ -26,7 +26,7 @@ func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
-		LogHttpErr(w, r, err, http.StatusInternalServerError)
+		LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
 		return ""
 	}
 	value := query.Get(name)

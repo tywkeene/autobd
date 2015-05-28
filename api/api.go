@@ -92,7 +92,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	manifest, err := GetManifest(dir)
 	if err != nil {
-		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
 		return
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
@@ -119,19 +119,19 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	}
 	fd, err := os.Open(grab)
 	if err != nil {
-		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
 	if err != nil {
-		helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	if info.IsDir() == true {
 		w.Header().Set("Content-Type", "application/x-tar")
 		if err := helpers.PackDir(grab, w); err != nil {
-			helpers.LogHttpErr(w, r, err, http.StatusInternalServerError)
+			helpers.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
 		return
