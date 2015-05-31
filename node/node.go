@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tywkeene/autobd/api"
+	"github.com/tywkeene/autobd/manifest"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
@@ -91,7 +91,7 @@ func RequestVersion(seed string) (*version.VersionInfo, error) {
 	return ver, nil
 }
 
-func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) {
+func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, error) {
 	log.Printf("Requesting manifest for directory %s from %s", dir, seed)
 	url := seed + "/" + version.API() + "/manifest?dir=" + dir
 	resp, err := Get(url)
@@ -105,11 +105,11 @@ func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) 
 		return nil, err
 	}
 
-	manifest := make(map[string]*api.Manifest)
-	if err := json.Unmarshal(buffer, &manifest); err != nil {
+	remoteManifest := make(map[string]*manifest.Manifest)
+	if err := json.Unmarshal(buffer, &remoteManifest); err != nil {
 		return nil, err
 	}
-	return manifest, nil
+	return remoteManifest, nil
 }
 
 func RequestSync(seed string, file string) error {

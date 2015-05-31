@@ -5,30 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tywkeene/autobd/logging"
+	"github.com/tywkeene/autobd/manifest"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"strings"
-	"time"
 )
 
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
-}
-
-type Manifest struct {
-	Name    string               `json:"name"`
-	Size    int64                `json:"size"`
-	ModTime time.Time            `json:"lastModified"`
-	Mode    os.FileMode          `json:"fileMode"`
-	IsDir   bool                 `json:"isDir"`
-	Files   map[string]*Manifest `json:"files,omitempty"`
 }
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
@@ -63,42 +52,18 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	return value
 }
 
-func NewManifest(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Manifest {
-	return &Manifest{name, size, modtime, mode, isDir, nil}
-}
-
-func GetManifest(dirPath string) (map[string]*Manifest, error) {
-	list, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-	manifest := make(map[string]*Manifest)
-	for _, child := range list {
-		childPath := path.Join(dirPath, child.Name())
-		manifest[childPath] = NewManifest(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
-		if child.IsDir() == true {
-			childContent, err := GetManifest(childPath)
-			if err != nil {
-				return nil, err
-			}
-			manifest[childPath].Files = childContent
-		}
-	}
-	return manifest, nil
-}
-
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		return
 	}
-	manifest, err := GetManifest(dir)
+	dirManifest, err := manifest.GetManifest(dir)
 	if err != nil {
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
 		return
 	}
-	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
+	serial, _ := json.MarshalIndent(&dirManifest, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.Server())
 	io.WriteString(w, string(serial))
