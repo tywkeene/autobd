@@ -1,3 +1,5 @@
+//Package api implements the endpoints and utility necessary to present
+//a consistent API to autobd-nodes
 package api
 
 import (
@@ -24,6 +26,8 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+//Check and make sure the client wants or can handle gzip, and replace the writer if it
+//can, if not, simply use the normal http.ResponseWriter
 func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -38,6 +42,9 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+//GetQueryValue() takes a name of a key:value pair to fetchf rom a URL encoded query,
+//a http.ResponseWriter 'w', and a http.Request 'r'. In the event that an error is encountered
+//the error will be returned to the client via logging facilities that use 'w' and 'r'
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -52,6 +59,9 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	return value
 }
 
+//ServeManifest() is the http handler for the "/manifest" API endpoint. It will extract the requested
+//directory to be manifested by calling GetQueryValue(), then returns writes it to the client as a
+//map[string]*manifest.Manifest encoded in json
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	dir := GetQueryValue("dir", w, r)
@@ -69,6 +79,8 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serial))
 }
 
+//ServeServerVer() is the http handler for the "/version" http API endpoint.
+//It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.API(),
@@ -79,6 +91,12 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serialVer))
 }
 
+//ServeSync() is the http handler for the "/sync" http API endpoint.
+//It takes the requested directory or file name passed as a url parameter "grab" i.e "/sync?grab=file1"
+//If the requested file is a directory, it will be tarballed and the "Content-Type" http-header will be
+//set to "application/x-tar".
+//If the file is a normal file, it will be served with http.ServeContent(), with the Content-Type http-header
+//set by http.ServeContent()
 func ServeSync(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	grab := GetQueryValue("grab", w, r)
