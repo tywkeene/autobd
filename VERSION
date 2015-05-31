@@ -1,0 +1,11 @@
+#!/bin/bash
+API="0"
+SERVER="0.0.1"
+
+git diff-files --quiet
+if [ "$?" != 0 ]; then
+    COMMIT="$(git rev-parse --short=10 HEAD)-dirty"
+else
+    COMMIT="$(git rev-parse --short=10 HEAD)"
+fi
+

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tywkeene/autobd/helpers"
+	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,19 +15,12 @@ import (
 	"time"
 )
 
-const (
-	ApiVersion string = "v0"
-	Version    string = "0.0.1"
-)
-
-var Commit string
-
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
 }
 
-type VersionInfo struct {
+type ServerVerInfo struct {
 	Ver     string `json:"server"`
 	Api     string `json:"api"`
 	Commit  string `json:"commit"`
@@ -97,17 +91,17 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+Version)
+	w.Header().Set("Server", "Autobd v"+version.Server())
 	io.WriteString(w, string(serial))
 }
 
-func ServeVersion(w http.ResponseWriter, r *http.Request) {
+func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	helpers.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&VersionInfo{Version, ApiVersion, Commit,
+	serialVer, _ := json.MarshalIndent(&ServerVerInfo{version.Server(), version.API(), version.Commit(),
 		"API not intended for human consumption"}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+Version)
+	w.Header().Set("Server", "Autobd v"+version.Server())
 	io.WriteString(w, string(serialVer))
 }
 
@@ -139,19 +133,8 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
 }
 
-func PrintVersionInfo(commitStr string) {
-	if commitStr == "" {
-		commitStr = "unknown"
-	}
-	//Get the commit string from main.go which was populated by the linker
-	//this is dumb but I'm too lazy to search for a way to fix it and too
-	//stubborn to take it out. having a commit string is nice.
-	Commit = commitStr
-	fmt.Printf("Autobd version %s (API %s) (git commit %s)\n", Version, ApiVersion, Commit)
-}
-
 func SetupRoutes() {
-	http.HandleFunc("/"+ApiVersion+"/manifest", GzipHandler(ServeManifest))
-	http.HandleFunc("/"+ApiVersion+"/sync", GzipHandler(ServeSync))
-	http.HandleFunc("/version", GzipHandler(ServeVersion))
+	http.HandleFunc("/"+version.API()+"/manifest", GzipHandler(ServeManifest))
+	http.HandleFunc("/"+version.API()+"/sync", GzipHandler(ServeSync))
+	http.HandleFunc("/version", GzipHandler(ServeServerVer))
 }

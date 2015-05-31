@@ -3,17 +3,22 @@ package main
 import (
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/version"
 	"log"
 	"net/http"
 	"os"
 	"syscall"
 )
 
-//Populated by linker magic
-var commit string
+var (
+	CommitHash string
+	ServerVer  string
+	APIVer     string
+)
 
 func init() {
-	api.PrintVersionInfo(commit)
+	version.Set(CommitHash, APIVer, ServerVer)
+	version.Print()
 	options.GetOptions()
 	api.SetupRoutes()
 }
