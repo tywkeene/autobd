@@ -12,7 +12,6 @@ type VersionInfo struct {
 	ServerVer  string `json:"server"`
 	APIVer     string `json:"api"`
 	CommitHash string `json:"commit"`
-	Comment    string `json:"comment"`
 }
 
 func Print() {

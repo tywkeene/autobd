@@ -71,8 +71,8 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.API(), version.Commit(),
-		"API not intended for human consumption"}, "  ", "  ")
+	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.API(),
+		version.Commit()}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.Server())
