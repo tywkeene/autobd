@@ -22,9 +22,6 @@ $ cd autobd
 $ ./build.sh
 ```
 
-Note: The build.sh script isn't required, but it populates a variable in autobd with the current commit, making it easier
-for me when/if you report a bug.
-
 ## Getting it running
 
 Currently only the HTTP API is in a fully working state, meaning you can `curl` to your heart's content.
