@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/tywkeene/autobd/api"
-	"github.com/tywkeene/autobd/helpers"
+	"github.com/tywkeene/autobd/packing"
+	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,7 +22,7 @@ func Get(url string) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("User-Agent", "Autobd-node/"+api.Version)
+	req.Header.Set("User-Agent", "Autobd-node/"+version.API())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -48,6 +49,24 @@ func DeflateResponse(resp *http.Response) ([]byte, error) {
 	return buffer, nil
 }
 
+func WriteFile(filename string, source io.Reader) error {
+	writer, err := os.Create(filename)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer writer.Close()
+
+	gr, err := gzip.NewReader(source)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+
+	io.Copy(writer, gr)
+	return nil
+}
+
 func RequestVersion(seed string) (*api.VersionInfo, error) {
 	log.Println("Requesting version from", seed)
 	url := seed + "/version"
@@ -71,7 +90,7 @@ func RequestVersion(seed string) (*api.VersionInfo, error) {
 
 func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) {
 	log.Printf("%s Requesting manifest for directory %s from %s", dir, seed)
-	url := seed + "/" + api.ApiVersion + "/manifest?dir=" + dir
+	url := seed + "/" + version.API() + "/manifest?dir=" + dir
 	resp, err := Get(url)
 	if err != nil {
 		return nil, err
@@ -92,7 +111,7 @@ func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) 
 
 func RequestSync(seed string, file string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, seed)
-	url := seed + "/" + api.ApiVersion + "/sync?grab=" + file
+	url := seed + "/" + version.API() + "/sync?grab=" + file
 	resp, err := Get(url)
 	if err != nil {
 		return err
@@ -100,7 +119,7 @@ func RequestSync(seed string, file string) error {
 	defer resp.Body.Close()
 
 	if resp.Header.Get("Content-Type") == "application/x-tar" {
-		err := helpers.UnpackDir(resp.Body)
+		err := packing.UnpackDir(resp.Body)
 		if err != nil && err == io.EOF {
 			return nil
 		} else {
@@ -115,6 +134,6 @@ func RequestSync(seed string, file string) error {
 			return err
 		}
 	}
-	err = helpers.WriteFile(file, resp.Body)
+	err = WriteFile(file, resp.Body)
 	return err
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,7 +22,7 @@ type gzipResponseWriter struct {
 	http.ResponseWriter
 }
 
-type ServerVerInfo struct {
+type VersionInfo struct {
 	Ver     string `json:"server"`
 	Api     string `json:"api"`
 	Commit  string `json:"commit"`
@@ -55,24 +54,6 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		fn(gzr, r)
 	}
-}
-
-func WriteFile(filename string, source io.Reader) error {
-	writer, err := os.Create(filename)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer writer.Close()
-
-	gr, err := gzip.NewReader(source)
-	if err != nil {
-		return err
-	}
-	defer gr.Close()
-
-	io.Copy(writer, gr)
-	return nil
 }
 
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
@@ -132,7 +113,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&ServerVerInfo{version.Server(), version.API(), version.Commit(),
+	serialVer, _ := json.MarshalIndent(&VersionInfo{version.Server(), version.API(), version.Commit(),
 		"API not intended for human consumption"}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
