@@ -1,5 +1,23 @@
-//Package api implements the endpoints and utility necessary to present
+//Package api implements the endpoints and utilities necessary to present
 //a consistent API to autobd-nodes
+//Currently there are three endpoints:
+//
+//All endpoints return a JSON encoded error string on error via logging.LogHttpErr()
+//
+// /<version>/manifest?dir=<dirname>
+// /<version>/sync?grab=<file or directory name>
+// /version
+//
+//The '/manifest' endpoint takes a directory as an argument passed as the url
+//paramater 'dir'. It returns a JSON encoded map of strings->manifest.Manifest
+//of the requested directory or a JSON encoded error string on error
+//
+//The '/sync' endpoint takes a directory or filename as an argument pass as the url
+//parameter 'grab'. If 'grab' is a directory, it will set the HTTP header 'Content-Type-'
+//to 'application/x-tar', and transport the directory packed as a tarball to the client via packing.PackDir()
+//
+//The '/version' endpoint simple returns a JSON version.VersionInfo struct
+//
 package api
 
 import (
@@ -59,8 +77,9 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	return value
 }
 
-//ServeManifest() is the http handler for the "/manifest" API endpoint. It will extract the requested
-//directory to be manifested by calling GetQueryValue(), then returns writes it to the client as a
+//ServeManifest() is the http handler for the "/manifest" API endpoint.
+//It takes the requested directory passed as a url parameter "dir" i.e "manifest/?dir=/"
+//It will then generate a manifest by calling api.GetQueryValue(), then writes it to the client as a
 //map[string]*manifest.Manifest encoded in json
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
