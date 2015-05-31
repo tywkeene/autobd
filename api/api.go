@@ -5,7 +5,9 @@
 //All endpoints return a JSON encoded error string on error via logging.LogHttpErr()
 //
 // /<version>/manifest?dir=<dirname>
+//
 // /<version>/sync?grab=<file or directory name>
+//
 // /version
 //
 //The '/manifest' endpoint takes a directory as an argument passed as the url
