@@ -5,7 +5,7 @@ MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
 RUN go get github.com/tywkeene/autobd
 
 WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
-RUN go build -v -x -ldflags "-X main.commit $(git rev-parse --short=10 HEAD)"
+RUN bash build.sh
 
 WORKDIR /
 
