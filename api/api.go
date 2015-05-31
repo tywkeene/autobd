@@ -22,13 +22,6 @@ type gzipResponseWriter struct {
 	http.ResponseWriter
 }
 
-type VersionInfo struct {
-	Ver     string `json:"server"`
-	Api     string `json:"api"`
-	Commit  string `json:"commit"`
-	Comment string `json:"comment"`
-}
-
 type Manifest struct {
 	Name    string               `json:"name"`
 	Size    int64                `json:"size"`
@@ -113,7 +106,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&VersionInfo{version.Server(), version.API(), version.Commit(),
+	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.API(), version.Commit(),
 		"API not intended for human consumption"}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")

@@ -70,7 +70,7 @@ func WriteFile(filename string, source io.Reader) error {
 	return nil
 }
 
-func RequestVersion(seed string) (*api.VersionInfo, error) {
+func RequestVersion(seed string) (*version.VersionInfo, error) {
 	log.Println("Requesting version from", seed)
 	url := seed + "/version"
 	resp, err := Get(url)
@@ -84,7 +84,7 @@ func RequestVersion(seed string) (*api.VersionInfo, error) {
 		return nil, err
 	}
 
-	var ver *api.VersionInfo
+	var ver *version.VersionInfo
 	if err := json.Unmarshal(buffer, &ver); err != nil {
 		return nil, err
 	}
@@ -141,15 +141,15 @@ func RequestSync(seed string, file string) error {
 	return err
 }
 
-func validateServerVersion(remote *api.VersionInfo) error {
+func validateServerVersion(remote *version.VersionInfo) error {
 	log.Println("Checking seed server's version...")
-	if version.Server() != remote.Ver {
+	if version.Server() != remote.ServerVer {
 		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
-			remote.Ver, version.Server())
+			remote.ServerVer, version.Server())
 	}
-	if version.API() != remote.Api {
+	if version.API() != remote.APIVer {
 		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
-			remote.Api, version.API())
+			remote.APIVer, version.API())
 	}
 	log.Println("Version OK")
 	return nil
