@@ -1,59 +1,12 @@
-package helpers
+package packing
 
 import (
 	"archive/tar"
 	"compress/gzip"
-	"encoding/json"
-	"fmt"
 	"io"
-	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 )
-
-func LogHttp(r *http.Request) {
-	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
-}
-
-func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
-	log.Printf("Returned error \"%s\" (HTTP %s) to %s", err.Error(), http.StatusText(status), r.RemoteAddr)
-	serialErr, _ := json.Marshal(err.Error())
-	http.Error(w, string(serialErr), status)
-}
-
-func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
-	query, err := url.ParseQuery(r.URL.RawQuery)
-	if err != nil {
-		LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
-		return ""
-	}
-	value := query.Get(name)
-	if len(value) == 0 || value == "" {
-		LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
-		return ""
-	}
-	return value
-}
-
-func WriteFile(filename string, source io.Reader) error {
-	writer, err := os.Create(filename)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer writer.Close()
-
-	gr, err := gzip.NewReader(source)
-	if err != nil {
-		return err
-	}
-	defer gr.Close()
-
-	io.Copy(writer, gr)
-	return nil
-}
 
 func UnpackDir(source io.Reader) error {
 	//Unzip the contents first

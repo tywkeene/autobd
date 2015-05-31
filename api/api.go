@@ -4,11 +4,14 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/tywkeene/autobd/helpers"
+	"github.com/tywkeene/autobd/logging"
+	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -54,6 +57,38 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func WriteFile(filename string, source io.Reader) error {
+	writer, err := os.Create(filename)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer writer.Close()
+
+	gr, err := gzip.NewReader(source)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+
+	io.Copy(writer, gr)
+	return nil
+}
+
+func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		logging.LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
+		return ""
+	}
+	value := query.Get(name)
+	if len(value) == 0 || value == "" {
+		logging.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
+		return ""
+	}
+	return value
+}
+
 func NewManifest(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Manifest {
 	return &Manifest{name, size, modtime, mode, isDir, nil}
 }
@@ -79,14 +114,14 @@ func GetManifest(dirPath string) (map[string]*Manifest, error) {
 }
 
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
-	helpers.LogHttp(r)
-	dir := helpers.GetQueryValue("dir", w, r)
+	logging.LogHttp(r)
+	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		return
 	}
 	manifest, err := GetManifest(dir)
 	if err != nil {
-		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
+		logging.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
 		return
 	}
 	serial, _ := json.MarshalIndent(&manifest, "  ", "  ")
@@ -96,7 +131,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
-	helpers.LogHttp(r)
+	logging.LogHttp(r)
 	serialVer, _ := json.MarshalIndent(&ServerVerInfo{version.Server(), version.API(), version.Commit(),
 		"API not intended for human consumption"}, "  ", "  ")
 
@@ -106,26 +141,26 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeSync(w http.ResponseWriter, r *http.Request) {
-	helpers.LogHttp(r)
-	grab := helpers.GetQueryValue("grab", w, r)
+	logging.LogHttp(r)
+	grab := GetQueryValue("grab", w, r)
 	if grab == "" {
 		return
 	}
 	fd, err := os.Open(grab)
 	if err != nil {
-		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
 	if err != nil {
-		helpers.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	if info.IsDir() == true {
 		w.Header().Set("Content-Type", "application/x-tar")
-		if err := helpers.PackDir(grab, w); err != nil {
-			helpers.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
+		if err := packing.PackDir(grab, w); err != nil {
+			logging.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
 		return
