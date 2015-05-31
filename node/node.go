@@ -4,7 +4,9 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/tywkeene/autobd/api"
+	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
@@ -13,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 )
 
 func Get(url string) (*http.Response, error) {
@@ -22,7 +25,7 @@ func Get(url string) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("User-Agent", "Autobd-node/"+version.API())
+	req.Header.Set("User-Agent", "Autobd-node/"+version.Server())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -89,7 +92,7 @@ func RequestVersion(seed string) (*api.VersionInfo, error) {
 }
 
 func RequestManifest(seed string, dir string) (map[string]*api.Manifest, error) {
-	log.Printf("%s Requesting manifest for directory %s from %s", dir, seed)
+	log.Printf("Requesting manifest for directory %s from %s", dir, seed)
 	url := seed + "/" + version.API() + "/manifest?dir=" + dir
 	resp, err := Get(url)
 	if err != nil {
@@ -136,4 +139,42 @@ func RequestSync(seed string, file string) error {
 	}
 	err = WriteFile(file, resp.Body)
 	return err
+}
+
+func validateServerVersion(remote *api.VersionInfo) error {
+	log.Println("Checking seed server's version...")
+	if version.Server() != remote.Ver {
+		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
+			remote.Ver, version.Server())
+	}
+	if version.API() != remote.Api {
+		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
+			remote.Api, version.API())
+	}
+	log.Println("Version OK")
+	return nil
+}
+
+func UpdateLoop(config options.NodeConf) error {
+	log.Printf("Running as a node... [update_interval = %s seed_server = %s]\n",
+		config.UpdateInterval, config.Seed)
+
+	remoteVer, err := RequestVersion(config.Seed)
+	if err != nil {
+		return err
+	}
+	if err := validateServerVersion(remoteVer); err != nil {
+		return err
+	}
+
+	updateInterval, err := time.ParseDuration(config.UpdateInterval)
+	if err != nil {
+		return err
+	}
+
+	for {
+		log.Printf("Updating with %s...\n", config.Seed)
+		time.Sleep(updateInterval)
+	}
+	return nil
 }

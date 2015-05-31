@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/tywkeene/autobd/api"
+	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/version"
 	"log"
@@ -24,6 +25,12 @@ func init() {
 }
 
 func main() {
+	if options.Config.RunNode == true {
+		err := node.UpdateLoop(options.Config.NodeConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
 	if err := syscall.Chroot(options.Config.Root); err != nil {
 		panic("chroot: " + err.Error())
 	}
