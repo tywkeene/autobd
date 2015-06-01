@@ -2,7 +2,7 @@
 //a consistent API to autobd-nodes
 //Currently there are three endpoints:
 //
-//All endpoints return a JSON encoded error string on error via logging.LogHttpErr()
+//NOTE: All endpoints return a JSON encoded error string on error via logging.LogHttpErr()
 //
 // /<version>/manifest?dir=<dirname>
 //
@@ -80,7 +80,8 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 }
 
 //ServeManifest() is the http handler for the "/manifest" API endpoint.
-//It takes the requested directory passed as a url parameter "dir" i.e "manifest/?dir=/"
+//It takes the requested directory passed as a url parameter "dir" i.e "/manifest?dir=/"
+//
 //It will then generate a manifest by calling api.GetQueryValue(), then writes it to the client as a
 //map[string]*manifest.Manifest encoded in json
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
@@ -114,6 +115,7 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 
 //ServeSync() is the http handler for the "/sync" http API endpoint.
 //It takes the requested directory or file name passed as a url parameter "grab" i.e "/sync?grab=file1"
+//
 //If the requested file is a directory, it will be tarballed and the "Content-Type" http-header will be
 //set to "application/x-tar".
 //If the file is a normal file, it will be served with http.ServeContent(), with the Content-Type http-header
