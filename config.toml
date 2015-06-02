@@ -2,16 +2,15 @@
 root_dir = "test"
 
 #The port the API will listen on
-api_port = "8081"
+api_port = "8080"
 
 #Run as a node
 run_as_node = true
 
 [node]
-
 #What server to communicate with IP/URL
 #(required when running as a node)
-seed_server = "http://localhost:8081"
+seed_servers = ["http://0.0.0.0:8081"]
 
 #How often to update with the other servers
-update_interval = "30s"
+update_interval = "10s"

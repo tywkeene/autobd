@@ -8,8 +8,8 @@ import (
 )
 
 type NodeConf struct {
-	Seed           string `toml:"seed_server"`
-	UpdateInterval string `toml:"update_interval"`
+	Seeds          []string `toml:"seed_servers"`
+	UpdateInterval string   `toml:"update_interval"`
 }
 
 type Conf struct {
@@ -28,7 +28,6 @@ func GetOptions() {
 	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required)")
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
 	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
-	flag.StringVar(&Config.NodeConfig.Seed, "seed", "", "Seed server to connect with (required when running as a node)")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 
 	flag.Parse()
@@ -46,7 +45,7 @@ func GetOptions() {
 		os.Exit(-1)
 	}
 
-	if Config.RunNode == true && Config.NodeConfig.Seed == "" {
+	if Config.RunNode == true && Config.NodeConfig.Seeds == nil {
 		fmt.Println("Must specify seed server when running as node")
 		os.Exit(-1)
 	}

@@ -142,7 +142,6 @@ func RequestSync(seed string, file string) error {
 }
 
 func validateServerVersion(remote *version.VersionInfo) error {
-	log.Println("Checking seed server's version...")
 	if version.Server() != remote.ServerVer {
 		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
 			remote.ServerVer, version.Server())
@@ -151,20 +150,43 @@ func validateServerVersion(remote *version.VersionInfo) error {
 		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
 			remote.APIVer, version.API())
 	}
-	log.Println("Version OK")
 	return nil
 }
 
-func UpdateLoop(config options.NodeConf) error {
-	log.Printf("Running as a node... [update_interval = %s seed_server = %s]\n",
-		config.UpdateInterval, config.Seed)
-
-	remoteVer, err := RequestVersion(config.Seed)
+func CompareManifest(server string) ([]string, error) {
+	remoteManifest, err := RequestManifest(server, "/")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := validateServerVersion(remoteVer); err != nil {
-		return err
+	localManifest, err := manifest.GetManifest("/")
+	if err != nil {
+		return nil, err
+	}
+
+	need := make([]string, 0)
+	for remoteName, _ := range remoteManifest {
+		if _, exists := localManifest[remoteName]; exists == false {
+			log.Println("Need", remoteName)
+			need = append(need, remoteName)
+		}
+	}
+	return need, nil
+}
+
+func UpdateLoop(config options.NodeConf) error {
+	log.Printf("Running as a node. Updating every %s with %s\n",
+		config.UpdateInterval, config.Seeds)
+
+	for _, server := range config.Seeds {
+		remoteVer, err := RequestVersion(server)
+
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if err := validateServerVersion(remoteVer); err != nil {
+			return err
+		}
 	}
 
 	updateInterval, err := time.ParseDuration(config.UpdateInterval)
@@ -173,8 +195,26 @@ func UpdateLoop(config options.NodeConf) error {
 	}
 
 	for {
-		log.Printf("Updating with %s...\n", config.Seed)
 		time.Sleep(updateInterval)
+		for _, server := range config.Seeds {
+			log.Printf("Updating with %s...\n", server)
+			need, err := CompareManifest(server)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if len(need) == 0 {
+				log.Println("In sync with", server)
+				continue
+			}
+			for _, filename := range need {
+				err := RequestSync(server, filename)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+			}
+		}
 	}
 	return nil
 }
