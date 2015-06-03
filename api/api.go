@@ -105,8 +105,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.API(),
-		version.Commit()}, "  ", "  ")
+	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.Commit()}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.Server())
@@ -149,7 +148,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetupRoutes() {
-	http.HandleFunc("/"+version.API()+"/manifest", GzipHandler(ServeManifest))
-	http.HandleFunc("/"+version.API()+"/sync", GzipHandler(ServeSync))
+	http.HandleFunc("/"+"v"+version.Major()+"/manifest", GzipHandler(ServeManifest))
+	http.HandleFunc("/"+"v"+version.Major()+"/sync", GzipHandler(ServeSync))
 	http.HandleFunc("/version", GzipHandler(ServeServerVer))
 }

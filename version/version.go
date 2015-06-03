@@ -1,29 +1,29 @@
 package version
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var (
 	CommitHash string
-	APIVer     string
 	ServerVer  string
 )
 
 type VersionInfo struct {
 	ServerVer  string `json:"server"`
-	APIVer     string `json:"api"`
 	CommitHash string `json:"commit"`
 }
 
 func Print() {
-	fmt.Printf("Autobd version %s (API v%s) (git commit %s)\n", ServerVer, APIVer, CommitHash)
+	fmt.Printf("Autobd version %s (git commit %s)\n", ServerVer, CommitHash)
 }
 
-func Set(commit string, api string, server string) {
+func Set(commit string, server string) {
 	CommitHash = commit
 	if CommitHash == "" {
 		CommitHash = "unknown"
 	}
-	APIVer = api
 	ServerVer = server
 }
 
@@ -31,10 +31,18 @@ func Server() string {
 	return ServerVer
 }
 
-func API() string {
-	return APIVer
-}
-
 func Commit() string {
 	return CommitHash
+}
+
+func Major() string {
+	return strings.Split(ServerVer, ".")[0]
+}
+
+func Minor() string {
+	return strings.Split(ServerVer, ".")[1]
+}
+
+func Patch() string {
+	return strings.Split(ServerVer, ".")[2]
 }

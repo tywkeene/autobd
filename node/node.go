@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -93,7 +94,7 @@ func RequestVersion(seed string) (*version.VersionInfo, error) {
 
 func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, error) {
 	log.Printf("Requesting manifest for directory %s from %s", dir, seed)
-	url := seed + "/" + version.API() + "/manifest?dir=" + dir
+	url := seed + "/" + "v" + version.Major() + "/manifest?dir=" + dir
 	resp, err := Get(url)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, er
 
 func RequestSync(seed string, file string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, seed)
-	url := seed + "/" + version.API() + "/sync?grab=" + file
+	url := seed + "/" + "v" + version.Major() + "/sync?grab=" + file
 	resp, err := Get(url)
 	if err != nil {
 		return err
@@ -146,9 +147,10 @@ func validateServerVersion(remote *version.VersionInfo) error {
 		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
 			remote.ServerVer, version.Server())
 	}
-	if version.API() != remote.APIVer {
+	remoteMajor := strings.Split(remote.ServerVer, ".")[0]
+	if version.Major() != remoteMajor {
 		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
-			remote.APIVer, version.API())
+			remoteMajor, version.Major())
 	}
 	return nil
 }

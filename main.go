@@ -14,11 +14,10 @@ import (
 var (
 	CommitHash string
 	ServerVer  string
-	APIVer     string
 )
 
 func init() {
-	version.Set(CommitHash, APIVer, ServerVer)
+	version.Set(CommitHash, ServerVer)
 	version.Print()
 	options.GetOptions()
 	api.SetupRoutes()
