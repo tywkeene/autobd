@@ -31,6 +31,7 @@ import (
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -68,11 +69,13 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
+		log.Println(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
 		return ""
 	}
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
+		log.Println(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
 		return ""
 	}
@@ -92,6 +95,7 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	dirManifest, err := manifest.GetManifest(dir)
 	if err != nil {
+		log.Println(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
 		return
 	}
@@ -127,18 +131,21 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	}
 	fd, err := os.Open(grab)
 	if err != nil {
+		log.Println(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
 	if err != nil {
+		log.Println(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	if info.IsDir() == true {
 		w.Header().Set("Content-Type", "application/x-tar")
 		if err := packing.PackDir(grab, w); err != nil {
+			log.Println(err)
 			logging.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
