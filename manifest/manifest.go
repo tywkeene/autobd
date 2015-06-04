@@ -21,6 +21,9 @@ func NewManifest(name string, size int64, modtime time.Time, mode os.FileMode, i
 }
 
 func GetManifest(dirPath string) (map[string]*Manifest, error) {
+	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
+		dirPath = "."
+	}
 	list, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		return nil, err

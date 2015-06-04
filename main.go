@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"syscall"
 )
 
 var (
@@ -24,9 +23,6 @@ func init() {
 }
 
 func main() {
-	if err := syscall.Chroot(options.Config.Root); err != nil {
-		panic("chroot: " + err.Error())
-	}
 	if err := os.Chdir(options.Config.Root); err != nil {
 		panic(err)
 	}

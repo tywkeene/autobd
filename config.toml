@@ -13,4 +13,4 @@ run_as_node = true
 seed_servers = ["http://0.0.0.0:8081"]
 
 #How often to update with the other servers
-update_interval = "10s"
+update_interval = "1m"
