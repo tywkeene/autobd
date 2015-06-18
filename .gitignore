@@ -2,3 +2,4 @@ autobd
 test
 *.swp
 *.swo
+.vim-bookmarks
