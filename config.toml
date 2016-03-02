@@ -1,5 +1,5 @@
 #Which directory to serve
-root_dir = "test"
+root_dir = "test/client"
 
 #The port the API will listen on
 api_port = "8080"
