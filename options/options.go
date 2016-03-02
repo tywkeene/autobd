@@ -25,7 +25,7 @@ func GetOptions() {
 	var configFile string
 
 	flag.StringVar(&configFile, "config", "", "Configuration file")
-	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required)")
+	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required). Must be absolute path")
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
 	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
