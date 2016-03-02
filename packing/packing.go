@@ -111,6 +111,7 @@ func PackDir(srcPath string, dest io.Writer) error {
 	tw := tar.NewWriter(dest)
 	defer tw.Close()
 
+	log.Println("Packing directory: ", srcPath)
 	err = filepath.Walk(absolutePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -120,7 +121,6 @@ func PackDir(srcPath string, dest io.Writer) error {
 		if err != nil {
 			return err
 		}
-		log.Println("Packing directory: ", relativePath)
 		return addTarFile(path, relativePath, tw)
 	})
 
