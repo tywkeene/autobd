@@ -124,7 +124,7 @@ func RequestSync(seed string, file string) error {
 
 	if resp.Header.Get("Content-Type") == "application/x-tar" {
 		err := packing.UnpackDir(resp.Body)
-		if err != nil && err == io.EOF {
+		if err != nil {
 			return nil
 		} else {
 			return err
@@ -155,6 +155,21 @@ func validateServerVersion(remote *version.VersionInfo) error {
 	return nil
 }
 
+func compareDirs(local map[string]*manifest.Manifest, remote map[string]*manifest.Manifest) []string {
+	need := make([]string, 0)
+	for name, info := range remote {
+		_, exists := local[name]
+		if exists == true && info.IsDir == true && remote[name].Files != nil {
+			dirNeed := compareDirs(local[name].Files, remote[name].Files)
+			need = append(need, dirNeed...)
+		}
+		if _, exists := local[name]; exists == false {
+			need = append(need, name)
+		}
+	}
+	return need
+}
+
 func CompareManifest(server string) ([]string, error) {
 	remoteManifest, err := RequestManifest(server, "/")
 	if err != nil {
@@ -166,9 +181,14 @@ func CompareManifest(server string) ([]string, error) {
 	}
 
 	need := make([]string, 0)
-	for remoteName, _ := range remoteManifest {
-		if _, exists := localManifest[remoteName]; exists == false {
-			log.Println("Need", remoteName)
+	for remoteName, info := range remoteManifest {
+		_, exists := localManifest[remoteName]
+		if info.IsDir == true && exists == true {
+			dirNeed := compareDirs(localManifest[remoteName].Files, remoteManifest[remoteName].Files)
+			need = append(need, dirNeed...)
+			continue
+		}
+		if exists == false {
 			need = append(need, remoteName)
 		}
 	}
@@ -209,6 +229,7 @@ func UpdateLoop(config options.NodeConf) error {
 				log.Println("In sync with", server)
 				continue
 			}
+			log.Printf("Need %s from %s\n", need, server)
 			for _, filename := range need {
 				err := RequestSync(server, filename)
 				if err != nil {
