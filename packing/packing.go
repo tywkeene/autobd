@@ -3,7 +3,9 @@ package packing
 import (
 	"archive/tar"
 	"compress/gzip"
+	"github.com/tywkeene/autobd/options"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -26,6 +28,7 @@ func UnpackDir(source io.Reader) error {
 		}
 
 		filename := header.Name
+		log.Println("Unpacking: ", filename)
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -78,8 +81,9 @@ func addTarFile(path string, name string, tw *tar.Writer) error {
 	if hdr.Typeflag == tar.TypeReg && name == "." {
 		hdr.Name = filepath.ToSlash(filepath.Base(path))
 	} else {
-		hdr.Name = filepath.ToSlash(name)
+		hdr.Name = filepath.ToSlash(path)
 	}
+	hdr.Name = filepath.ToSlash(name)
 	if err := tw.WriteHeader(hdr); err != nil {
 		return err
 	}
@@ -112,18 +116,11 @@ func PackDir(srcPath string, dest io.Writer) error {
 			return err
 		}
 
-		var relativePath string
-		if os.IsPathSeparator(srcPath[len(srcPath)-1]) {
-			relativePath, err = filepath.Rel(absolutePath, path)
-		} else {
-			relativePath, err = filepath.Rel(filepath.Dir(absolutePath), path)
-		}
-
-		relativePath = filepath.ToSlash(relativePath)
-
+		relativePath, err := filepath.Rel(options.Config.Root, path)
 		if err != nil {
 			return err
 		}
+		log.Println("Packing directory: ", relativePath)
 		return addTarFile(path, relativePath, tw)
 	})
 
