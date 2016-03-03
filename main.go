@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 )
 
 var (
@@ -31,6 +32,12 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+	}
+	if options.Config.Cores > runtime.NumCPU() {
+		log.Println("Requested processor value greater than number of actual processors, using default")
+	} else {
+		log.Printf("Using %d processors\n", options.Config.Cores)
+		runtime.GOMAXPROCS(options.Config.Cores)
 	}
 	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
 	log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
