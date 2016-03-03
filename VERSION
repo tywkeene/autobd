@@ -1,5 +1,5 @@
 #!/bin/bash
-SERVER="0.0.3"
+SERVER="0.0.4"
 
 git diff-files --quiet
 if [ "$?" != 0 ]; then
