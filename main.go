@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
@@ -23,10 +24,21 @@ func init() {
 	api.SetupRoutes()
 }
 
+const Logo = `
+ █████╗ ██╗   ██╗████████╗ ██████╗ ██████╗ ██████╗
+██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗
+███████║██║   ██║   ██║   ██║   ██║██████╔╝██║  ██║
+██╔══██║██║   ██║   ██║   ██║   ██║██╔══██╗██║  ██║
+██║  ██║╚██████╔╝   ██║   ╚██████╔╝██████╔╝██████╔╝
+╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝
+Backing you up since whenever..
+`
+
 func main() {
 	if err := os.Chdir(options.Config.Root); err != nil {
 		panic(err)
 	}
+	fmt.Println(Logo)
 	if options.Config.RunNode == true {
 		err := node.UpdateLoop(options.Config.NodeConfig)
 		if err != nil {
