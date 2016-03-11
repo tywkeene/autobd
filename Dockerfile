@@ -2,6 +2,13 @@ FROM google/golang
 
 MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
 
+RUN useradd -ms /bin/bash autobd
+USER autobd
+
+WORKDIR /home/autobd
+
+ENV GOPATH=/home/autobd/go
+
 RUN go get github.com/tywkeene/autobd
 
 WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
@@ -9,10 +16,8 @@ ADD build.sh $GOPATH/src/github.com/tywkeene/autobd/build.sh
 ADD VERSION $GOPATH/src/github.com/tywkeene/autobd/VERSION
 RUN bash build.sh
 
-WORKDIR /
-
-RUN mkdir /data
-VOLUME /data
+RUN mkdir /home/autobd/data
+VOLUME /home/autobd/data
 
 EXPOSE 8081
-ENTRYPOINT ./$GOPATH/src/github.com/tywkeene/autobd/autobd -root data
+ENTRYPOINT ./autobd -root /home/autobd/data -api-port 8080
