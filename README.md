@@ -27,7 +27,7 @@ $ ./build.sh
 
 Currently only the HTTP API is in a fully working state, meaning you can `curl` to your heart's content.
 
-To run autobd, simply do: `sudo ./autobd -root /path/to/directory/` in the autobd directory.
+To run autobd, simply do: `./autobd -root /full/path/to/directory/` (must be full path) in the autobd directory.
 
 Autobd will listen on port `8081` by default and will be chrooted into the directory passed to -root
 
