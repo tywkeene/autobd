@@ -1,0 +1,24 @@
+FROM google/golang
+
+MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
+
+RUN useradd -ms /bin/bash autobd-dev
+
+RUN apt-get update && apt-get install -y openssh-client
+USER autobd-dev
+
+WORKDIR /home/autobd-dev
+
+ENV GOPATH=/home/autobd-dev/go
+
+RUN go get github.com/tywkeene/autobd
+RUN git clone http://192.168.1.126:10080/savior/autobd-dev.git
+
+WORKDIR /home/autobd-dev/autobd-dev/
+RUN bash build.sh
+
+RUN mkdir /home/autobd-dev/data
+VOLUME /home/autobd-dev/data
+
+EXPOSE 8081
+ENTRYPOINT ./autobd -root /home/autobd-dev/data -api-port 8080
