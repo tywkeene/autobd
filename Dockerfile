@@ -12,8 +12,6 @@ ENV GOPATH=/home/autobd/go
 RUN go get github.com/tywkeene/autobd
 
 WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
-ADD build.sh $GOPATH/src/github.com/tywkeene/autobd/build.sh
-ADD VERSION $GOPATH/src/github.com/tywkeene/autobd/VERSION
 RUN bash build.sh
 
 RUN mkdir /home/autobd/data
