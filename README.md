@@ -38,7 +38,7 @@ the image.
 
 After you have docker up and running do `docker build -t autobd:latest .` in the autobd directory
 
-and to run `docker run --name autobd -p 8081:8081 -v /path/to/data:/data autobd:latest`
+and to run `docker run --name autobd -p 8081:8081 -v /path/to/data:/home/autobd/data autobd:latest`
 
 This will run the autobd docker image you just built in a container called `autobd` with the data directory you passed
 to the `-v` flag.
