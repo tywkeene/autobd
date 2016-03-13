@@ -6,12 +6,15 @@ function rm_container(){
     fi
 }
 
-echo "Building staging..."
-docker build --rm -t autobd:staging -f docker/Dockerfile.staging .
-echo "Building dev..."
-docker build --rm -t autobd:dev -f docker/Dockerfile.dev .
-echo "Building deploy..."
-docker build --rm -t autobd:deploy -f docker/Dockerfile.deploy .
+function build_image(){
+    echo "Building $1..."
+    docker build --rm -t autobd:$1 -f docker/Dockerfile.$1 .
+
+}
+
+build_image "staging"
+build_image "dev"
+build_image "deploy"
 
 rm_container "autobd-staging"
 rm_container "autobd-dev"
