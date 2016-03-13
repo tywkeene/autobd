@@ -1,0 +1,21 @@
+FROM google/golang
+
+MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
+
+ENV GOPATH=/home/autobd-staging/go
+WORKDIR $GOPATH
+
+ADD . $GOPATH/src/github.com/tywkeene/autobd
+WORKDIR $GOPATH/src/github.com/tywkeene/autobd
+
+RUN go get .
+RUN bash build.sh
+
+RUN useradd -ms /bin/bash autobd-staging
+
+RUN mkdir /home/autobd-staging/data
+VOLUME /home/autobd-staging/data
+
+USER autobd-staging
+EXPOSE 8080
+ENTRYPOINT ./autobd -root /home/autobd-staging/data -api-port 8080

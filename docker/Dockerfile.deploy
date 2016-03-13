@@ -17,5 +17,5 @@ RUN bash build.sh
 RUN mkdir /home/autobd/data
 VOLUME /home/autobd/data
 
-EXPOSE 8081
+EXPOSE 8082
 ENTRYPOINT ./autobd -root /home/autobd/data -api-port 8080
