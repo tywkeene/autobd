@@ -1,5 +1,5 @@
 #Which directory to serve
-root_dir = "test/client"
+root_dir = "/home/autobd-node/data"
 
 #The port the API will listen on
 api_port = "8080"
@@ -10,7 +10,7 @@ run_as_node = true
 [node]
 #What server to communicate with IP/URL
 #(required when running as a node)
-seed_servers = ["http://0.0.0.0:8081"]
+seed_servers = ["http://172.18.0.2:8080", "http://172.18.0.3:8080", "http://172.18.0.4:8080"]
 
 #How often to update with the other servers
 update_interval = "1m"

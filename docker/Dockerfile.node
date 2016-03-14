@@ -1,0 +1,20 @@
+FROM google/golang
+
+MAINTAINER Tyrell Keene <tyrell.wkeene@gmail.com>
+
+RUN useradd -ms /bin/bash autobd-node
+USER autobd-node
+
+ENV GOPATH=/home/autobd-node/go
+
+RUN go get github.com/tywkeene/autobd
+
+WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
+RUN bash build.sh
+ADD config.toml config.toml
+
+RUN mkdir /home/autobd-node/data
+VOLUME /home/autobd-node/data
+
+EXPOSE 8080
+ENTRYPOINT ./autobd -node -config config.toml
