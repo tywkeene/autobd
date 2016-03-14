@@ -2,7 +2,7 @@
 
 function rm_container(){
     if docker ps -f name='$1' &> /dev/null; then
-        echo "Removing old $(docker rm -f $1)"
+        echo "Removing old container: $(docker rm -f $1) image: $(docker rmi -f $i)"
     fi
 }
 

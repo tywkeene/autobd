@@ -12,7 +12,7 @@ WORKDIR /home/autobd-dev
 ENV GOPATH=/home/autobd-dev/go
 
 RUN go get github.com/tywkeene/autobd
-RUN git clone http://192.168.1.126:10080/savior/autobd-dev.git
+RUN git clone http://192.168.1.126:10080/tywkeene/autobd-dev.git
 
 WORKDIR /home/autobd-dev/autobd-dev/
 RUN bash build.sh
@@ -22,5 +22,4 @@ RUN mkdir /home/autobd-dev/data
 VOLUME /home/autobd-dev/data
 
 EXPOSE 8081
-ENTRYPOINT ./autobd -api-port 8080 -ssl true -tls-cert /home/autobd-dev/autobd/secret/cert.pem \
-            -tls-key /home/autobd-dev/autobd-dev/secret/key.pem -root /home/autobd-dev/data
+ENTRYPOINT ./autobd -api-port 8080 -ssl true -tls-cert /home/autobd-dev/autobd/secret/cert.pem -tls-key /home/autobd-dev/autobd-dev/secret/key.pem -root /home/autobd-dev/data
