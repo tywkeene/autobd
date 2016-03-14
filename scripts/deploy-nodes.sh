@@ -19,7 +19,9 @@ fi
 build_image "autobd-node"
 
 for i in `seq 1 $1`; do
-    [ -d "/home/$USER/data/autobd-nodes/node$i" ] && rm -rf /home/$user/data/autobd-nodes/node$i
+    if [ -d "/home/$USER/data/autobd-nodes/node$i" ]; then
+        rm -rf /home/$user/data/autobd-nodes/node$i
+    fi
     mkdir /home/$USER/data/autobd-nodes/node$i
     docker run -d --net frontend -v /home/$USER/data/autobd-nodes/node$i:/home/autobd-node/data --name "autobd-node$i" autobd:node
 done
