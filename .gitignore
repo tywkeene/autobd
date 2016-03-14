@@ -3,3 +3,4 @@ test
 *.swp
 *.swo
 .vim-bookmarks
+secret/

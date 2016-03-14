@@ -4,6 +4,12 @@ root_dir = "/home/autobd-node/data"
 #The port the API will listen on
 api_port = "8080"
 
+#Path to the TLS certificate to use when running as server
+tls_cert = "./secret/cert.pem"
+
+#Path to the key associated with the TLS certificate used by the server
+tls_key = "./secret/key.pem"
+
 #Run as a node
 run_as_node = true
 

@@ -19,6 +19,9 @@ type Conf struct {
 	NodeConfig NodeConf `toml:"node"`
 	Cores      int      `toml:"cores"`
 	Seed       string   `toml:"seed"`
+	Cert       string   `toml:"tls_cert"`
+	Key        string   `toml:"tls_key"`
+	Ssl        bool     `toml:"use_ssl"`
 }
 
 var Config Conf
@@ -33,6 +36,9 @@ func GetOptions() {
 	flag.StringVar(&Config.Seed, "seed", "", "Seed server to query")
 	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
+	flag.StringVar(&Config.Cert, "tls-cert", "./secret/cert.pem", "Path to TLS certificate to use")
+	flag.StringVar(&Config.Key, "tls-key", "./secret/key.pem", "Path to TLS key to use")
+	flag.BoolVar(&Config.RunNode, "ssl", true, "Use TLS/SSL")
 
 	flag.Parse()
 

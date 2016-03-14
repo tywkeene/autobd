@@ -52,5 +52,9 @@ func main() {
 		runtime.GOMAXPROCS(options.Config.Cores)
 	}
 	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
-	log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
+	if options.Config.Ssl == true {
+		log.Panic(http.ListenAndServeTLS(":"+options.Config.ApiPort, options.Config.Cert, options.Config.Key, nil))
+	} else {
+		log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
+	}
 }
