@@ -12,11 +12,7 @@ function build_image(){
 
 }
 
-build_image "dev"
-build_image "deploy"
+build_image "server"
+rm_container "autobd-server"
 
-rm_container "autobd-dev"
-rm_container "autobd-deploy"
-
-echo "Running dev: $(docker run --net=frontend -d -p 8081:8080 -v /home/$USER/data/server-data:/home/autobd-dev/data --name autobd-dev autobd:dev)"
-echo "Running deploy: $(docker run --net=frontend -d -p 8082:8080 -v /home/$USER/data/server-data:/home/autobd/data --name autobd-deploy autobd:deploy)"
+echo "Running server: $(docker run --net=autobd -d -p 8082:8080 -v /home/$USER/data/server-data:/home/autobd/data --name autobd-server autobd:server)"
