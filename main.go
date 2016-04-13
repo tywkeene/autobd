@@ -53,6 +53,7 @@ func main() {
 	}
 	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
 	if options.Config.Ssl == true {
+		log.Printf("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
 		log.Panic(http.ListenAndServeTLS(":"+options.Config.ApiPort, options.Config.Cert, options.Config.Key, nil))
 	} else {
 		log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
