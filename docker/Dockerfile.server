@@ -12,8 +12,7 @@ ENV GOPATH=/home/autobd/go
 RUN go get github.com/tywkeene/autobd
 
 WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
-RUN bash build.sh
-ADD secret secret/
+RUN bash scripts/crypto_gen.sh
 
 RUN mkdir /home/autobd/data
 VOLUME /home/autobd/data
