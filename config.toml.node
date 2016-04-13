@@ -1,0 +1,13 @@
+#Which directory to 
+root_dir = "/home/autobd/data"
+
+#Run as a node
+run_as_node = true
+
+[node]
+#What server to communicate with IP/URL
+#(required when running as a node)
+seed_servers = ["https://0.0.0.0:8080"]
+
+#How often to update with the other servers
+update_interval = "1m"
