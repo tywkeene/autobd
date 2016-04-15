@@ -211,8 +211,10 @@ func UpdateLoop(config options.NodeConf) error {
 			log.Println(err)
 			continue
 		}
-		if err := validateServerVersion(remoteVer); err != nil {
-			return err
+		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
+			if err := validateServerVersion(remoteVer); err != nil {
+				return err
+			}
 		}
 	}
 

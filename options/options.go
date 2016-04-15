@@ -8,8 +8,9 @@ import (
 )
 
 type NodeConf struct {
-	Seeds          []string `toml:"seed_servers"`
-	UpdateInterval string   `toml:"update_interval"`
+	Seeds                 []string `toml:"seed_servers"`
+	UpdateInterval        string   `toml:"update_interval"`
+	IgnoreVersionMismatch bool     `toml:"node_ignore_version_mismatch"`
 }
 
 type Conf struct {
@@ -35,10 +36,13 @@ func GetOptions() {
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
 	flag.StringVar(&Config.Seed, "seed", "", "Seed server to query")
 	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
-	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 	flag.StringVar(&Config.Cert, "tls-cert", "", "Path to TLS certificate to use")
 	flag.StringVar(&Config.Key, "tls-key", "", "Path to TLS key to use")
 	flag.BoolVar(&Config.Ssl, "ssl", true, "Use TLS/SSL")
+
+	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
+	flag.BoolVar(&Config.NodeConfig.IgnoreVersionMismatch, "node-ignore-version-mismatch", false,
+		"Ignore a mismatch in server and client versions")
 
 	flag.Parse()
 
