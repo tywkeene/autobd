@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"github.com/tywkeene/autobd/logging"
 	"github.com/tywkeene/autobd/manifest"
+	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
@@ -45,6 +46,15 @@ type gzipResponseWriter struct {
 
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
+}
+
+func CheckClient(client string) bool {
+	for _, check := range options.Config.AuthorizedClients {
+		if check == client {
+			return true
+		}
+	}
+	return false
 }
 
 //Check and make sure the client wants or can handle gzip, and replace the writer if it

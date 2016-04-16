@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"log"
 	"os"
 )
 
@@ -14,15 +15,16 @@ type NodeConf struct {
 }
 
 type Conf struct {
-	Root       string   `toml:"root_dir"`
-	ApiPort    string   `toml:"api_port"`
-	RunNode    bool     `toml:"run_as_node"`
-	NodeConfig NodeConf `toml:"node"`
-	Cores      int      `toml:"cores"`
-	Seed       string   `toml:"seed"`
-	Cert       string   `toml:"tls_cert"`
-	Key        string   `toml:"tls_key"`
-	Ssl        bool     `toml:"use_ssl"`
+	Root              string   `toml:"root_dir"`
+	ApiPort           string   `toml:"api_port"`
+	RunNode           bool     `toml:"run_as_node"`
+	NodeConfig        NodeConf `toml:"node"`
+	Cores             int      `toml:"cores"`
+	Seed              string   `toml:"seed"`
+	Cert              string   `toml:"tls_cert"`
+	Key               string   `toml:"tls_key"`
+	Ssl               bool     `toml:"use_ssl"`
+	AuthorizedClients []string `toml:"authorized_clients"`
 }
 
 var Config Conf
@@ -46,6 +48,7 @@ func GetOptions() {
 
 	flag.Parse()
 
+	log.Println(Config.AuthorizedClients)
 	if configFile != "" {
 		if _, err := toml.DecodeFile(configFile, &Config); err != nil {
 			fmt.Printf("Error reading config %s: %s\n", configFile, err.Error())

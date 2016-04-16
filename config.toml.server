@@ -15,3 +15,6 @@ tls_key = "/home/autobd/secret/key.pem"
 
 #Run as a node
 run_as_node = false
+
+#List of the IP's of clients allowed to connect to the server
+authorized_clients =  ["localhost", "0.0.0.0"]
