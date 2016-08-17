@@ -1,5 +1,5 @@
 #Which directory to serve
-root_dir = "/home/$USER/data/server-data"
+root_dir = "/home/autobd/data/"
 
 #The port the API will listen on
 api_port = "8080"
