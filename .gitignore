@@ -4,4 +4,4 @@ test
 *.swo
 .vim-bookmarks
 secret/
-config.toml.local
+devel/
