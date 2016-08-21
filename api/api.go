@@ -91,6 +91,8 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
+		log.Println("No directory defined")
+		logging.LogHttpErr(w, r, fmt.Errorf("Must define directory"), http.StatusInternalServerError)
 		return
 	}
 	dirManifest, err := manifest.GetManifest(dir)
