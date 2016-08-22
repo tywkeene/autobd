@@ -13,14 +13,16 @@ fi
 build_image "node"
 
 SEED_SERVER="https://172.18.0.2:8080"
+ETC_DIR="/home/$USER/etc/autobd"
+DATA_DIR="/home/$USER/data/autobd-nodes/node"
+
 for i in `seq 1 $1`; do
-    if [ -d "/home/$USER/data/autobd-nodes/node$i" ]; then
-        echo "removing /home/$USER/data/autobd-node/node$i"
-        rm -rf /home/$USER/data/autobd-nodes/node$i
+    if [ ! -d "$DATA_DIR$1" ]; then
+        mkdir "$DATA_DIR$i"
+        echo "$DATA_DIR$i"
     fi
-    mkdir /home/$USER/data/autobd-nodes/node$i
     docker run -d --net autobd \
-        -e "SEED_SERVER=$SEED_SERVER" \
-        -v /home/$USER/data/autobd-nodes/node$i:/home/autobd-node/data \
+        -v $DATA_DIR$i:/home/autobd/data \
+        -v $ETC_DIR:/home/autobd/etc \
         --name "autobd-node$i" autobd:node
 done

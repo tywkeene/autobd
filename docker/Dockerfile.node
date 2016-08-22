@@ -16,4 +16,4 @@ RUN mkdir /home/autobd/data
 VOLUME /home/autobd/data
 
 EXPOSE 8080
-ENTRYPOINT ./autobd -root /home/autobd/data -seed $SEED_SERVER -node true
+ENTRYPOINT ./autobd -config /home/autobd/etc/config.toml.node

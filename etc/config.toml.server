@@ -5,7 +5,7 @@ root_dir = "/home/autobd/data/"
 api_port = "8080"
 
 #Use tls/ssl
-use_ssl = false
+use_ssl = true
 
 #Path to the TLS certificate to use when running as server
 tls_cert = "/home/autobd/secret/cert.pem"
@@ -15,6 +15,3 @@ tls_key = "/home/autobd/secret/key.pem"
 
 #Run as a node
 run_as_node = false
-
-#List of the IP's of clients allowed to connect to the server
-authorized_clients =  ["localhost", "0.0.0.0"]
