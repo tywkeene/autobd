@@ -80,6 +80,14 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 //map[string]*manifest.Manifest encoded in json
 func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
+
+	uuid := GetQueryValue("uuid", w, r)
+	if validateNode(uuid) == false {
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		return
+	}
+	updateNodeOnline(uuid)
+
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		log.Println("No directory defined")
@@ -97,8 +105,6 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", "Autobd v"+version.Server())
 	io.WriteString(w, string(serial))
 
-	uuid := GetQueryValue("uuid", w, r)
-	updateNodeOnline(uuid)
 }
 
 //ServeServerVer() is the http handler for the "/version" http API endpoint.
@@ -121,6 +127,11 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 //set by http.ServeContent()
 func ServeSync(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
+	uuid := GetQueryValue("uuid", w, r)
+	if validateNode(uuid) == false {
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		return
+	}
 	grab := GetQueryValue("grab", w, r)
 	if grab == "" {
 		return
@@ -148,7 +159,6 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
-	uuid := GetQueryValue("uuid", w, r)
 	updateNodeSynced(uuid, true)
 	updateNodeOnline(uuid)
 }
@@ -176,6 +186,11 @@ func updateNodeSynced(uuid string, val bool) {
 func updateNodeOnline(address string) {
 	node := CurrentNodes[address]
 	node.Online = time.Now().Format(time.RFC850)
+}
+
+func validateNode(uuid string) bool {
+	_, ok := CurrentNodes[uuid]
+	return ok
 }
 
 //ListNodes() is the http handler for the "/nodes" API endpoint
