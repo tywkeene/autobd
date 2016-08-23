@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/satori/go.uuid"
 	"github.com/tywkeene/autobd/manifest"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
@@ -19,6 +20,12 @@ import (
 	"strings"
 	"time"
 )
+
+var UUID string
+
+func constructUrl(server string, str string) string {
+	return server + "/v" + version.Major() + str
+}
 
 func Get(url string) (*http.Response, error) {
 
@@ -99,8 +106,8 @@ func RequestVersion(seed string) (*version.VersionInfo, error) {
 
 func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, error) {
 	log.Printf("Requesting manifest for directory %s from %s", dir, seed)
-	url := seed + "/" + "v" + version.Major() + "/manifest?dir=" + dir
-	resp, err := Get(url)
+	endpoint := constructUrl(seed, "/manifest?dir="+dir+"&uuid="+UUID)
+	resp, err := Get(endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +127,8 @@ func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, er
 
 func RequestSync(seed string, file string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, seed)
-	url := seed + "/" + "v" + version.Major() + "/sync?grab=" + file
-	resp, err := Get(url)
+	endpoint := constructUrl(seed, "/sync?grab="+file+"&uuid="+UUID)
+	resp, err := Get(endpoint)
 	if err != nil {
 		return err
 	}
@@ -200,6 +207,13 @@ func CompareManifest(server string) ([]string, error) {
 	return need, nil
 }
 
+func IdentifyWithServer(server string) {
+	UUID = uuid.NewV4().String()
+	log.Println("Generated node UUID:", UUID)
+	endpoint := constructUrl(server, "/identify?uuid="+UUID+"&version="+version.Server())
+	Get(endpoint)
+}
+
 func UpdateLoop(config options.NodeConf) error {
 	log.Printf("Running as a node. Updating every %s with %s\n",
 		config.UpdateInterval, config.Seeds)
@@ -216,6 +230,7 @@ func UpdateLoop(config options.NodeConf) error {
 				return err
 			}
 		}
+		IdentifyWithServer(server)
 	}
 
 	updateInterval, err := time.ParseDuration(config.UpdateInterval)
