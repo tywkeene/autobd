@@ -18,6 +18,7 @@ build_image "server"
 
 DATA_DIR="/home/$USER/data/server-data"
 SECRET_DIR="/home/$USER/secret"
+ETC_DIR="/home/$USER/etc/autobd"
 PORT=8080
 
 mkdir -p $DATA_DIR
@@ -25,6 +26,7 @@ echo "Running server: $(docker run --net=autobd -d \
     -p $PORT:8080 \
     -v $DATA_DIR:/home/autobd/data \
     -v $SECRET_DIR:/home/autobd/secret \
+    -v $ETC_DIR:/home/autobd/etc \
     --net autobd \
     --name autobd-server autobd:server)"
 docker logs autobd-server

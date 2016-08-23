@@ -20,5 +20,8 @@ VOLUME /home/autobd/secret
 RUN mkdir /home/autobd/data
 VOLUME /home/autobd/data
 
+RUN mkdir /home/autobd/etc
+VOLUME /home/autobd/etc
+
 EXPOSE 8080
-ENTRYPOINT ./autobd -config config.toml.server
+ENTRYPOINT ./autobd -config /home/autobd/etc/config.toml.server
