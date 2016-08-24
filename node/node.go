@@ -214,6 +214,24 @@ func IdentifyWithServer(server string) {
 	Get(endpoint)
 }
 
+func sendHeartbeat(server string) (*http.Response, error) {
+	endpoint := constructUrl(server, "/heartbeat?uuid="+UUID)
+	return Get(endpoint)
+}
+
+func startHeart(config options.NodeConf) error {
+	go func(config options.NodeConf) {
+		interval, _ := time.ParseDuration(config.HeartbeatInterval)
+		for {
+			time.Sleep(interval)
+			for _, server := range config.Seeds {
+				sendHeartbeat(server)
+			}
+		}
+	}(config)
+	return nil
+}
+
 func UpdateLoop(config options.NodeConf) error {
 	log.Printf("Running as a node. Updating every %s with %s\n",
 		config.UpdateInterval, config.Seeds)
@@ -238,6 +256,7 @@ func UpdateLoop(config options.NodeConf) error {
 		return err
 	}
 
+	startHeart(config)
 	for {
 		time.Sleep(updateInterval)
 		for _, server := range config.Seeds {

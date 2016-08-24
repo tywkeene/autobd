@@ -196,8 +196,22 @@ func validateNode(uuid string) bool {
 //ListNodes() is the http handler for the "/nodes" API endpoint
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
+	logging.LogHttp(r)
 	serial, _ := json.MarshalIndent(&CurrentNodes, " ", " ")
 	io.WriteString(w, string(serial))
+}
+
+//HeartBeat() is the http handler for the "/heartbeat" API endpoint
+//Nodes will request this every config.HeartbeatInterval and the server will update
+//their respective online timestamp
+func HeartBeat(w http.ResponseWriter, r *http.Request) {
+	logging.LogHttp(r)
+	uuid := GetQueryValue("uuid", w, r)
+	if validateNode(uuid) == false {
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		return
+	}
+	updateNodeOnline(uuid)
 }
 
 func SetupRoutes() {
@@ -205,5 +219,6 @@ func SetupRoutes() {
 	http.HandleFunc("/v"+version.Major()+"/sync", GzipHandler(ServeSync))
 	http.HandleFunc("/v"+version.Major()+"/identify", GzipHandler(Identify))
 	http.HandleFunc("/v"+version.Major()+"/nodes", GzipHandler(ListNodes))
+	http.HandleFunc("/v"+version.Major()+"/heartbeat", GzipHandler(HeartBeat))
 	http.HandleFunc("/version", GzipHandler(ServeServerVer))
 }

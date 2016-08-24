@@ -11,6 +11,7 @@ import (
 type NodeConf struct {
 	Seeds                 []string `toml:"seed_servers"`
 	UpdateInterval        string   `toml:"update_interval"`
+	HeartbeatInterval     string   `toml:"heartbeat_interval"`
 	IgnoreVersionMismatch bool     `toml:"node_ignore_version_mismatch"`
 }
 
@@ -42,6 +43,7 @@ func GetOptions() {
 	flag.StringVar(&Config.Key, "tls-key", "", "Path to TLS key to use")
 	flag.BoolVar(&Config.Ssl, "ssl", true, "Use TLS/SSL")
 
+	flag.StringVar(&Config.NodeConfig.HeartbeatInterval, "heartbeat-interval", "30s", "How often to send a heartbeat to the server")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 	flag.BoolVar(&Config.NodeConfig.IgnoreVersionMismatch, "node-ignore-version-mismatch", false,
 		"Ignore a mismatch in server and client versions")
