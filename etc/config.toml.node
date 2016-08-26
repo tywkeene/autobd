@@ -14,3 +14,9 @@ node_ignore_version_mismatch = false
 
 #How often to update with the other servers
 update_interval = "30s"
+
+#How often to request the /heartbeat api endpoint
+heartbeat_interval = "10s"
+
+#How many heartbeats the server is allowed to miss before it's ignored
+max_missed_beats = 5
