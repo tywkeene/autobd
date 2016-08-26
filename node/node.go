@@ -21,7 +21,38 @@ import (
 	"time"
 )
 
-var UUID string
+type Server struct {
+	Address     string
+	MissedBeats int //How many heartbeats the server has missed
+	Online      bool
+}
+
+type Node struct {
+	Servers []*Server
+	UUID    string
+	Config  options.NodeConf
+}
+
+var localNode *Node
+
+func newServer(address string) *Server {
+	return &Server{address, 0, true}
+}
+
+func newNode(config options.NodeConf) *Node {
+	servers := make([]*Server, 0)
+	for _, server := range config.Seeds {
+		servers = append(servers, newServer(server))
+	}
+	UUID := uuid.NewV4().String()
+	log.Println("Generated node UUID:", UUID)
+	return &Node{servers, UUID, config}
+}
+
+func InitNode(config options.NodeConf) *Node {
+	node := newNode(config)
+	return node
+}
 
 func constructUrl(server string, str string) string {
 	return server + "/v" + version.Major() + str
@@ -83,7 +114,7 @@ func WriteFile(filename string, source io.Reader) error {
 	return nil
 }
 
-func RequestVersion(seed string) (*version.VersionInfo, error) {
+func (node *Node) RequestVersion(seed string) (*version.VersionInfo, error) {
 	log.Println("Requesting version from", seed)
 	url := seed + "/version"
 	resp, err := Get(url)
@@ -104,9 +135,9 @@ func RequestVersion(seed string) (*version.VersionInfo, error) {
 	return ver, nil
 }
 
-func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, error) {
+func (node *Node) RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, error) {
 	log.Printf("Requesting manifest for directory %s from %s", dir, seed)
-	endpoint := constructUrl(seed, "/manifest?dir="+dir+"&uuid="+UUID)
+	endpoint := constructUrl(seed, "/manifest?dir="+dir+"&uuid="+node.UUID)
 	resp, err := Get(endpoint)
 	if err != nil {
 		return nil, err
@@ -125,9 +156,9 @@ func RequestManifest(seed string, dir string) (map[string]*manifest.Manifest, er
 	return remoteManifest, nil
 }
 
-func RequestSync(seed string, file string) error {
+func (node *Node) RequestSync(seed string, file string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, seed)
-	endpoint := constructUrl(seed, "/sync?grab="+file+"&uuid="+UUID)
+	endpoint := constructUrl(seed, "/sync?grab="+file+"&uuid="+node.UUID)
 	resp, err := Get(endpoint)
 	if err != nil {
 		return err
@@ -154,7 +185,7 @@ func RequestSync(seed string, file string) error {
 	return err
 }
 
-func validateServerVersion(remote *version.VersionInfo) error {
+func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
 	if version.Server() != remote.ServerVer {
 		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
 			remote.ServerVer, version.Server())
@@ -182,8 +213,8 @@ func compareDirs(local map[string]*manifest.Manifest, remote map[string]*manifes
 	return need
 }
 
-func CompareManifest(server string) ([]string, error) {
-	remoteManifest, err := RequestManifest(server, "/")
+func (node *Node) CompareManifest(server string) ([]string, error) {
+	remoteManifest, err := node.RequestManifest(server, "/")
 	if err != nil {
 		return nil, err
 	}
@@ -207,61 +238,75 @@ func CompareManifest(server string) ([]string, error) {
 	return need, nil
 }
 
-func IdentifyWithServer(server string) {
-	UUID = uuid.NewV4().String()
-	log.Println("Generated node UUID:", UUID)
-	endpoint := constructUrl(server, "/identify?uuid="+UUID+"&version="+version.Server())
+func (node *Node) IdentifyWithServer(server string) {
+	endpoint := constructUrl(server, "/identify?uuid="+node.UUID+"&version="+version.Server())
 	Get(endpoint)
 }
 
-func sendHeartbeat(server string) (*http.Response, error) {
-	endpoint := constructUrl(server, "/heartbeat?uuid="+UUID)
+func (node *Node) sendHeartbeat(server string) (*http.Response, error) {
+	endpoint := constructUrl(server, "/heartbeat?uuid="+node.UUID)
 	return Get(endpoint)
 }
 
-func startHeart(config options.NodeConf) error {
+func (node *Node) StartHeart() {
 	go func(config options.NodeConf) {
 		interval, _ := time.ParseDuration(config.HeartbeatInterval)
 		for {
 			time.Sleep(interval)
-			for _, server := range config.Seeds {
-				sendHeartbeat(server)
+			for _, server := range node.Servers {
+				if server.Online == false {
+					continue
+				}
+				_, err := node.sendHeartbeat(server.Address)
+				if err != nil {
+					log.Println(err)
+					server.MissedBeats++
+					if server.MissedBeats == node.Config.MaxMissedBeats {
+						server.Online = false
+						log.Println(server.Address, "has missed max beats, ignoring")
+					}
+				}
 			}
 		}
-	}(config)
-	return nil
+	}(node.Config)
 }
 
-func UpdateLoop(config options.NodeConf) error {
-	log.Printf("Running as a node. Updating every %s with %s\n",
-		config.UpdateInterval, config.Seeds)
-
-	for _, server := range config.Seeds {
-		remoteVer, err := RequestVersion(server)
-
+func (node *Node) ValidateAndIdentifyServers() error {
+	node.StartHeart()
+	for _, server := range node.Servers {
+		remoteVer, err := node.RequestVersion(server.Address)
 		if err != nil {
-			log.Println(err)
-			continue
+			return err
 		}
 		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
-			if err := validateServerVersion(remoteVer); err != nil {
+			if err := node.validateServerVersion(remoteVer); err != nil {
 				return err
 			}
 		}
-		IdentifyWithServer(server)
+		node.IdentifyWithServer(server.Address)
 	}
+	return nil
+}
 
-	updateInterval, err := time.ParseDuration(config.UpdateInterval)
+func (node *Node) UpdateLoop() error {
+	if err := node.ValidateAndIdentifyServers(); err != nil {
+		return err
+	}
+	log.Printf("Running as a node. Updating every %s with %s\n",
+		node.Config.UpdateInterval, node.Config.Seeds)
+
+	updateInterval, err := time.ParseDuration(node.Config.UpdateInterval)
 	if err != nil {
 		return err
 	}
-
-	startHeart(config)
 	for {
 		time.Sleep(updateInterval)
-		for _, server := range config.Seeds {
-			log.Printf("Updating with %s...\n", server)
-			need, err := CompareManifest(server)
+		for _, server := range node.Servers {
+			if server.Online == false {
+				continue
+			}
+			log.Printf("Updating with %s...\n", server.Address)
+			need, err := node.CompareManifest(server.Address)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -270,9 +315,9 @@ func UpdateLoop(config options.NodeConf) error {
 				log.Println("In sync with", server)
 				continue
 			}
-			log.Printf("Need %s from %s\n", need, server)
+			log.Printf("Need %s from %s\n", need, server.Address)
 			for _, filename := range need {
-				err := RequestSync(server, filename)
+				err := node.RequestSync(server.Address, filename)
 				if err != nil {
 					log.Println(err)
 					continue
