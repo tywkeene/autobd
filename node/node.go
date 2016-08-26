@@ -22,7 +22,7 @@ var localNode *Node
 
 func newNode(config options.NodeConf) *Node {
 	servers := make(map[string]*server.Server, 0)
-	for _, url := range config.Seeds {
+	for _, url := range config.Servers {
 		servers[url] = server.NewServer(url)
 	}
 	UUID := uuid.NewV4().String()
@@ -108,7 +108,7 @@ func (node *Node) UpdateLoop() error {
 		return err
 	}
 	log.Printf("Running as a node. Updating every %s with %s\n",
-		node.Config.UpdateInterval, node.Config.Seeds)
+		node.Config.UpdateInterval, node.Config.Servers)
 
 	updateInterval, err := time.ParseDuration(node.Config.UpdateInterval)
 	if err != nil {
