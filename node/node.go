@@ -7,7 +7,6 @@ import (
 	"github.com/tywkeene/autobd/server"
 	"github.com/tywkeene/autobd/version"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -48,12 +47,12 @@ func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
 	return nil
 }
 
-func (node *Node) IdentifyWithServer(url string) (*http.Response, error) {
+func (node *Node) IdentifyWithServer(url string) ([]byte, error) {
 	server := node.Servers[url]
 	return server.Get("/identify?uuid=" + node.UUID + "&version=" + version.Server())
 }
 
-func (node *Node) sendHeartbeat(url string) (*http.Response, error) {
+func (node *Node) sendHeartbeat(url string) ([]byte, error) {
 	server := node.Servers[url]
 	return server.Get("/heartbeat?uuid=" + node.UUID)
 }

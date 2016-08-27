@@ -2,7 +2,6 @@ package packing
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"github.com/tywkeene/autobd/options"
 	"io"
 	"log"
@@ -11,13 +10,7 @@ import (
 )
 
 func UnpackDir(source io.Reader) error {
-	//Unzip the contents first
-	gr, err := gzip.NewReader(source)
-	if err != nil {
-		return err
-	}
-	defer gr.Close()
-	tr := tar.NewReader(gr)
+	tr := tar.NewReader(source)
 
 	for {
 		header, err := tr.Next()

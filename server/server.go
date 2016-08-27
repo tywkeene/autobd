@@ -1,10 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"github.com/tywkeene/autobd/manifest"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
@@ -20,10 +20,15 @@ type Server struct {
 	Address     string
 	MissedBeats int //How many heartbeats the server has missed
 	Online      bool
+	Client      *http.Client
 }
 
 func NewServer(address string) *Server {
-	return &Server{address, 0, true}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	return &Server{address, 0, true, client}
 }
 
 func (server *Server) constructUrl(str string) string {
@@ -42,30 +47,19 @@ func DeflateResponse(resp *http.Response) ([]byte, error) {
 	return buffer, nil
 }
 
-func (server *Server) Get(endpoint string) (*http.Response, error) {
+func (server *Server) Get(endpoint string) ([]byte, error) {
 	url := server.constructUrl(endpoint)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("User-Agent", "Autobd-node/"+version.Server())
-	resp, err := client.Do(req)
+	resp, err := server.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		buffer, _ := DeflateResponse(resp)
-		var err string
-		json.Unmarshal(buffer, &err)
-		return nil, errors.New(err)
-	}
-	return resp, nil
+	return DeflateResponse(resp)
 }
 
 func writeFile(filename string, source io.Reader) error {
@@ -104,13 +98,7 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 
 func (server *Server) RequestManifest(dir string, uuid string) (map[string]*manifest.Manifest, error) {
 	log.Printf("Requesting manifest for directory %s from %s", dir, server.Address)
-	resp, err := server.Get("/manifest?dir=" + dir + "&uuid=" + uuid)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	buffer, err := DeflateResponse(resp)
+	buffer, err := server.Get("/manifest?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -124,19 +112,14 @@ func (server *Server) RequestManifest(dir string, uuid string) (map[string]*mani
 
 func (server *Server) RequestSync(file string, uuid string) error {
 	log.Printf("Requesting sync of file '%s' from %s", file, server.Address)
-	resp, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
+	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
-	if resp.Header.Get("Content-Type") == "application/x-tar" {
-		err := packing.UnpackDir(resp.Body)
-		if err != nil {
-			return nil
-		} else {
-			return err
-		}
+	reader := bytes.NewReader(buffer)
+	if err := packing.UnpackDir(reader); err != nil {
+		return err
 	}
 
 	//make sure we create the directory tree if it's needed
@@ -146,7 +129,7 @@ func (server *Server) RequestSync(file string, uuid string) error {
 			return err
 		}
 	}
-	err = writeFile(file, resp.Body)
+	err = writeFile(file, reader)
 	return err
 }
 
