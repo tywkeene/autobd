@@ -1,3 +1,5 @@
+//package server provides all the necessary logic when interacting with
+//an autobd server. Node side logic resides in package node
 package server
 
 import (

@@ -1,3 +1,4 @@
+//Package node provides the node side logic of the node.
 package node
 
 import (
