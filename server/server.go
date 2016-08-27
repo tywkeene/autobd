@@ -172,3 +172,11 @@ func (server *Server) CompareManifest(uuid string) ([]string, error) {
 	}
 	return need, nil
 }
+
+func (server *Server) IdentifyWithServer(uuid string) ([]byte, error) {
+	return server.Get("/identify?uuid=" + uuid + "&version=" + version.Server())
+}
+
+func (server *Server) SendHeartbeat(uuid string) ([]byte, error) {
+	return server.Get("/heartbeat?uuid=" + uuid)
+}

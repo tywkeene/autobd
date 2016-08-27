@@ -47,16 +47,6 @@ func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
 	return nil
 }
 
-func (node *Node) IdentifyWithServer(url string) ([]byte, error) {
-	server := node.Servers[url]
-	return server.Get("/identify?uuid=" + node.UUID + "&version=" + version.Server())
-}
-
-func (node *Node) sendHeartbeat(url string) ([]byte, error) {
-	server := node.Servers[url]
-	return server.Get("/heartbeat?uuid=" + node.UUID)
-}
-
 func (node *Node) StartHeart() {
 	go func(config options.NodeConf) {
 		interval, _ := time.ParseDuration(config.HeartbeatInterval)
@@ -66,7 +56,7 @@ func (node *Node) StartHeart() {
 				if server.Online == false {
 					continue
 				}
-				_, err := node.sendHeartbeat(server.Address)
+				_, err := server.SendHeartbeat(node.UUID)
 				if err != nil {
 					log.Println(err)
 					server.MissedBeats++
@@ -92,7 +82,7 @@ func (node *Node) ValidateAndIdentifyServers() error {
 				return err
 			}
 		}
-		_, err = node.IdentifyWithServer(server.Address)
+		_, err = server.IdentifyWithServer(node.UUID)
 		if err != nil {
 			log.Println(err)
 			continue
