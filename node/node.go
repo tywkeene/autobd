@@ -111,7 +111,7 @@ func (node *Node) UpdateLoop() error {
 				continue
 			}
 			log.Printf("Updating with %s...\n", server.Address)
-			need, err := server.CompareManifest(node.UUID)
+			need, err := server.CompareManifest(options.Config.NodeConfig.TargetDirectory, node.UUID)
 			if err != nil {
 				log.Println(err)
 				continue

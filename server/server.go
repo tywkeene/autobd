@@ -150,8 +150,8 @@ func compareDirs(local map[string]*manifest.Manifest, remote map[string]*manifes
 	return need
 }
 
-func (server *Server) CompareManifest(uuid string) ([]string, error) {
-	remoteManifest, err := server.RequestManifest("/", uuid)
+func (server *Server) CompareManifest(target string, uuid string) ([]string, error) {
+	remoteManifest, err := server.RequestManifest(target, uuid)
 	if err != nil {
 		return nil, err
 	}

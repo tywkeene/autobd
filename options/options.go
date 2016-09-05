@@ -13,6 +13,7 @@ type NodeConf struct {
 	HeartbeatInterval     string   `toml:"heartbeat_interval"`
 	MaxMissedBeats        int      `toml:"max_missed_beats"`
 	IgnoreVersionMismatch bool     `toml:"node_ignore_version_mismatch"`
+	TargetDirectory       string   `toml:"target_directory"`
 }
 
 type Conf struct {
@@ -47,6 +48,7 @@ func GetOptions() {
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 	flag.BoolVar(&Config.NodeConfig.IgnoreVersionMismatch, "node-ignore-version-mismatch", false,
 		"Ignore a mismatch in server and client versions")
+	flag.StringVar(&Config.NodeConfig.TargetDirectory, "target-directory", "/", "Which directory on the node to sync")
 
 	flag.Parse()
 
