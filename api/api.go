@@ -7,8 +7,8 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/logging"
-	"github.com/tywkeene/autobd/manifest"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
@@ -73,12 +73,12 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	return value
 }
 
-//ServeManifest() is the http handler for the "/manifest" API endpoint.
-//It takes the requested directory passed as a url parameter "dir" i.e "/manifest?dir=/"
+//ServeIndex() is the http handler for the "/index" API endpoint.
+//It takes the requested directory passed as a url parameter "dir" i.e "/index?dir=/"
 //
-//It will then generate a manifest by calling api.GetQueryValue(), then writes it to the client as a
-//map[string]*manifest.Manifest encoded in json
-func ServeManifest(w http.ResponseWriter, r *http.Request) {
+//It will then generate a index by calling api.GetQueryValue(), then writes it to the client as a
+//map[string]*index.Index encoded in json
+func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 
 	uuid := GetQueryValue("uuid", w, r)
@@ -94,13 +94,13 @@ func ServeManifest(w http.ResponseWriter, r *http.Request) {
 		logging.LogHttpErr(w, r, fmt.Errorf("Must define directory"), http.StatusInternalServerError)
 		return
 	}
-	dirManifest, err := manifest.GetManifest(dir)
+	dirIndex, err := index.GetIndex(dir)
 	if err != nil {
 		log.Println(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Error getting manifest"), http.StatusInternalServerError)
+		logging.LogHttpErr(w, r, fmt.Errorf("Error getting index"), http.StatusInternalServerError)
 		return
 	}
-	serial, _ := json.MarshalIndent(&dirManifest, "  ", "  ")
+	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.Server())
 	io.WriteString(w, string(serial))
@@ -215,7 +215,7 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetupRoutes() {
-	http.HandleFunc("/v"+version.Major()+"/manifest", GzipHandler(ServeManifest))
+	http.HandleFunc("/v"+version.Major()+"/index", GzipHandler(ServeIndex))
 	http.HandleFunc("/v"+version.Major()+"/sync", GzipHandler(ServeSync))
 	http.HandleFunc("/v"+version.Major()+"/identify", GzipHandler(Identify))
 	http.HandleFunc("/v"+version.Major()+"/nodes", GzipHandler(ListNodes))

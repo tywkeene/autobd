@@ -7,7 +7,7 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/tywkeene/autobd/manifest"
+	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
@@ -98,18 +98,18 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 	return ver, nil
 }
 
-func (server *Server) RequestManifest(dir string, uuid string) (map[string]*manifest.Manifest, error) {
-	log.Printf("Requesting manifest for directory %s from %s", dir, server.Address)
-	buffer, err := server.Get("/manifest?dir=" + dir + "&uuid=" + uuid)
+func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
+	log.Printf("Requesting index for directory %s from %s", dir, server.Address)
+	buffer, err := server.Get("/index?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
 	}
 
-	remoteManifest := make(map[string]*manifest.Manifest)
-	if err := json.Unmarshal(buffer, &remoteManifest); err != nil {
+	remoteIndex := make(map[string]*index.Index)
+	if err := json.Unmarshal(buffer, &remoteIndex); err != nil {
 		return nil, err
 	}
-	return remoteManifest, nil
+	return remoteIndex, nil
 }
 
 func (server *Server) RequestSync(file string, uuid string) error {
@@ -135,7 +135,7 @@ func (server *Server) RequestSync(file string, uuid string) error {
 	return err
 }
 
-func compareDirs(local map[string]*manifest.Manifest, remote map[string]*manifest.Manifest) []string {
+func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) []string {
 	need := make([]string, 0)
 	for name, info := range remote {
 		_, exists := local[name]
@@ -150,21 +150,21 @@ func compareDirs(local map[string]*manifest.Manifest, remote map[string]*manifes
 	return need
 }
 
-func (server *Server) CompareManifest(target string, uuid string) ([]string, error) {
-	remoteManifest, err := server.RequestManifest(target, uuid)
+func (server *Server) CompareIndex(target string, uuid string) ([]string, error) {
+	remoteIndex, err := server.RequestIndex(target, uuid)
 	if err != nil {
 		return nil, err
 	}
-	localManifest, err := manifest.GetManifest("/")
+	localIndex, err := index.GetIndex("/")
 	if err != nil {
 		return nil, err
 	}
 
 	need := make([]string, 0)
-	for remoteName, info := range remoteManifest {
-		_, exists := localManifest[remoteName]
+	for remoteName, info := range remoteIndex {
+		_, exists := localIndex[remoteName]
 		if info.IsDir == true && exists == true {
-			dirNeed := compareDirs(localManifest[remoteName].Files, remoteManifest[remoteName].Files)
+			dirNeed := compareDirs(localIndex[remoteName].Files, remoteIndex[remoteName].Files)
 			need = append(need, dirNeed...)
 			continue
 		}
