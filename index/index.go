@@ -1,6 +1,10 @@
 package index
 
 import (
+	"bufio"
+	"crypto/sha512"
+	"encoding/hex"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -8,16 +12,53 @@ import (
 )
 
 type Index struct {
-	Name    string            `json:"name"`
-	Size    int64             `json:"size"`
-	ModTime time.Time         `json:"lastModified"`
-	Mode    os.FileMode       `json:"fileMode"`
-	IsDir   bool              `json:"isDir"`
-	Files   map[string]*Index `json:"files,omitempty"`
+	Name     string            `json:"name"`
+	Checksum string            `json:"checksum,omitempty"`
+	Size     int64             `json:"size"`
+	ModTime  time.Time         `json:"lastModified"`
+	Mode     os.FileMode       `json:"fileMode"`
+	IsDir    bool              `json:"isDir"`
+	Files    map[string]*Index `json:"files,omitempty"`
+}
+
+func GetChecksum(path string) (string, error) {
+	file, err := os.Open(path)
+
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	stats, err := file.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	size := stats.Size()
+	raw := make([]byte, size)
+
+	buffer := bufio.NewReader(file)
+	_, err = buffer.Read(raw)
+
+	hash := sha512.New()
+	io.WriteString(hash, string(raw))
+	checksum := hex.EncodeToString(hash.Sum(nil))
+
+	return checksum, nil
 }
 
 func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Index {
-	return &Index{name, size, modtime, mode, isDir, nil}
+	var checksum string
+	var err error
+	if isDir == false {
+		checksum, err = GetChecksum(name)
+		if err != nil {
+			return nil
+		}
+	} else {
+		checksum = ""
+	}
+	return &Index{name, checksum, size, modtime, mode, isDir, nil}
 }
 
 func GetIndex(dirPath string) (map[string]*Index, error) {
