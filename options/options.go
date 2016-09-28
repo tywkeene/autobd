@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"log"
 	"os"
 )
 
@@ -65,8 +66,11 @@ func GetOptions() {
 		os.Exit(-1)
 	}
 
-	if Config.RunNode == true && Config.NodeConfig.Servers == nil && Config.Server == "" {
-		panic("Must specify seed server when running as node")
+	log.Println(len(Config.NodeConfig.Servers))
+	if Config.RunNode == true && len(Config.NodeConfig.Servers) == 0 {
+		if Config.Server == "" {
+			panic("Must specify seed server when running as node")
+		}
 	} else if Config.RunNode == true && Config.NodeConfig.Servers == nil && Config.Server != "" {
 		Config.NodeConfig.Servers = append(Config.NodeConfig.Servers, Config.Server)
 	}
