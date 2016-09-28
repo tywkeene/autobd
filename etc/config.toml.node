@@ -7,7 +7,7 @@ run_as_node = true
 [node]
 #What server to communicate with IP/URL
 #(required when running as a node)
-seed_servers = ["https://172.18.0.2:8080"]
+servers = ["https://172.18.0.2:8080"]
 
 #Don't fail if the node's version doesn't match the server's
 node_ignore_version_mismatch = false
