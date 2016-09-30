@@ -25,28 +25,44 @@ $ ./build.sh
 
 ## Getting it running
 
-Currently only the HTTP API is in a fully working state, meaning you can `curl` to your heart's content.
+To run autobd , simply do: `./autobd -config etc/config.toml`
 
-To run autobd, simply do: `./autobd -root /full/path/to/directory/` (must be full path) in the autobd directory.
+Autobd ships with two configuration files, config.toml.server and config.toml.node, to get you started running both
 
-Autobd will listen on port `8081` by default and will be chrooted into the directory passed to -root
 
-###Dockerfile
+### Dockerfile
 
-Autobd ships with a Dockerfile. You'll of course need [docker](https://docs.docker.com/installation/) to build and run
-the image.
+Autobd ships with two Dockerfiles and the scripts to deploy both server and node containers. You'll of course need [docker](https://docs.docker.com/engine/installation/)
 
-After you have docker up and running do `docker build -t autobd:latest .` in the autobd directory
+#### scripts/deploy-server.sh
+Usage: ./scripts/deploy-server.sh
 
-and to run `docker run --name autobd -p 8081:8081 -v /path/to/data:/home/autobd/data autobd:latest`
+Removes old autobd-server container, builds a new image, and deploys a new autobd-server container using the arguments:
+```
+DATA_DIR="/home/$USER/data/server-data"
+SECRET_DIR="/home/$USER/secret"
+ETC_DIR="/home/$USER/etc/autobd"
+PORT=8080
+```
+These variables may be modified to suit your needs.
 
-This will run the autobd docker image you just built in a container called `autobd` with the data directory you passed
-to the `-v` flag.
 
-Autobd will listen for connections on the port specified on the left side of the `:` in the `-p` flag.
-i.e `-p 123:8081` will cause the container to listen on port `123`.
+#### scripts/deploy-nodes.sh
+Usage: ./scripts/deploy-nodes.sh n
 
-Same goes for the `-v` flag: `-v /a/b/c:/data` will mount `/a/b/c` (on the host) to `/data/` inside the container
+
+Builds new autobd-node images, and deploys n nodes
+
+#### scripts/kill-nodes.sh
+Usage: ./scripts/kill-nodes.sh n
+
+Runs ```docker rm -f```for n nodes
+
+#### scripts/setup-network.sh
+Usage ./scripts/setup-network.sh
+
+Sets up a docker network for server and nodes to communicate. 
+(I basically just use this testing, may or may not be useful to you)
 
 ## The API
 See [API.md](https://github.com/tywkeene/autobd/blob/master/API.md)
