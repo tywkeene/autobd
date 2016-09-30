@@ -108,24 +108,34 @@ func (node *Node) UpdateLoop() error {
 		time.Sleep(updateInterval)
 		for _, server := range node.Servers {
 			if server.Online == false {
+				log.Printf("(!!) (offline) Skipping %s...\n", server.Address)
 				continue
 			}
-			log.Printf("Updating with %s...\n", server.Address)
+			log.Printf(" (??) Updating with %s...\n", server.Address)
 			need, err := server.CompareIndex(node.Config.TargetDirectory, node.UUID)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
+
 			if len(need) == 0 {
-				log.Println("In sync with", server)
+				log.Println("(OK) In sync with", server.Address)
 				continue
 			}
-			log.Printf("Need %s from %s\n", need, server.Address)
-			for _, filename := range need {
-				err := server.RequestSync(filename, node.UUID)
-				if err != nil {
-					log.Println(err)
-					continue
+			for _, object := range need {
+				log.Printf(" (!=) Need %s from %s\n", object.Name, server.Address)
+				if object.IsDir == true {
+					err := server.RequestSyncDir(object.Name, node.UUID)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+				} else if object.IsDir == false {
+					err := server.RequestSyncFile(object.Name, node.UUID)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
 				}
 			}
 		}

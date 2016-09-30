@@ -19,10 +19,10 @@ import (
 )
 
 type Server struct {
-	Address     string
-	MissedBeats int //How many heartbeats the server has missed
-	Online      bool
-	Client      *http.Client
+	Address     string       //Server URL
+	MissedBeats int          //How many heartbeats the server has missed
+	Online      bool         //Is there server online
+	Client      *http.Client //connection configuration for this server
 }
 
 func NewServer(address string) *Server {
@@ -43,10 +43,7 @@ func DeflateResponse(resp *http.Response) ([]byte, error) {
 		return nil, err
 	}
 	defer reader.Close()
-
-	var buffer []byte
-	buffer, _ = ioutil.ReadAll(reader)
-	return buffer, nil
+	return ioutil.ReadAll(reader)
 }
 
 func (server *Server) Get(endpoint string) ([]byte, error) {
@@ -71,19 +68,12 @@ func writeFile(filename string, source io.Reader) error {
 		return err
 	}
 	defer writer.Close()
-
-	gr, err := gzip.NewReader(source)
-	if err != nil {
-		return err
-	}
-	defer gr.Close()
-
-	io.Copy(writer, gr)
+	io.Copy(writer, source)
 	return nil
 }
 
 func (server *Server) RequestVersion() (*version.VersionInfo, error) {
-	log.Println("Requesting version from", server.Address)
+	log.Println("(??) Requesting version from", server.Address)
 	resp, err := http.Get(server.Address + "/version")
 	if err != nil {
 		return nil, err
@@ -99,7 +89,7 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 }
 
 func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
-	log.Printf("Requesting index for directory %s from %s", dir, server.Address)
+	log.Printf(" (??) Requesting index for directory %s from %s", dir, server.Address)
 	buffer, err := server.Get("/index?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
@@ -112,8 +102,8 @@ func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.I
 	return remoteIndex, nil
 }
 
-func (server *Server) RequestSync(file string, uuid string) error {
-	log.Printf("Requesting sync of file '%s' from %s", file, server.Address)
+func (server *Server) RequestSyncDir(file string, uuid string) error {
+	log.Printf(" (REQ) Requesting sync of directory '%s' from %s", file, server.Address)
 	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
@@ -135,22 +125,53 @@ func (server *Server) RequestSync(file string, uuid string) error {
 	return err
 }
 
-func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) []string {
-	need := make([]string, 0)
-	for name, info := range remote {
-		_, exists := local[name]
-		if exists == true && info.IsDir == true && remote[name].Files != nil {
-			dirNeed := compareDirs(local[name].Files, remote[name].Files)
-			need = append(need, dirNeed...)
+func (server *Server) RequestSyncFile(file string, uuid string) error {
+	log.Printf(" (REQ) Requesting sync of file '%s' from %s", file, server.Address)
+	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
+	if err != nil {
+		return err
+	}
+	reader := bytes.NewReader(buffer)
+	err = writeFile(file, reader)
+	return err
+}
+
+func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
+	need := make([]*index.Index, 0)
+	for objName, object := range remote {
+		_, existsLocally := local[object.Name] //Does it exist on the node?
+
+		if existsLocally == false {
+			need = append(need, remote[objName])
+			continue
 		}
-		if _, exists := local[name]; exists == false {
-			need = append(need, name)
+
+		// If it does, and it's a directory, and it has children
+		if existsLocally == true && object.IsDir == true && object.Files != nil {
+			dirNeed := compareDirs(local[objName].Files, object.Files) //Scan the children
+			need = append(need, dirNeed...)
+			continue
+		}
+
+		//If it isn't a directory and doesn't exist
+		if existsLocally == false && object.IsDir == false {
+			need = append(need, remote[objName])
+			continue
+		}
+
+		//If it is a file and does exist, compare checksums
+		if existsLocally == true && object.IsDir == false {
+			if local[objName].Checksum != remote[objName].Checksum {
+				log.Println(" (!=) Checksum mismatch:", objName)
+				need = append(need, remote[objName])
+				continue
+			}
 		}
 	}
 	return need
 }
 
-func (server *Server) CompareIndex(target string, uuid string) ([]string, error) {
+func (server *Server) CompareIndex(target string, uuid string) ([]*index.Index, error) {
 	remoteIndex, err := server.RequestIndex(target, uuid)
 	if err != nil {
 		return nil, err
@@ -159,19 +180,7 @@ func (server *Server) CompareIndex(target string, uuid string) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
-
-	need := make([]string, 0)
-	for remoteName, info := range remoteIndex {
-		_, exists := localIndex[remoteName]
-		if info.IsDir == true && exists == true {
-			dirNeed := compareDirs(localIndex[remoteName].Files, remoteIndex[remoteName].Files)
-			need = append(need, dirNeed...)
-			continue
-		}
-		if exists == false {
-			need = append(need, remoteName)
-		}
-	}
+	need := compareDirs(localIndex, remoteIndex)
 	return need, nil
 }
 
