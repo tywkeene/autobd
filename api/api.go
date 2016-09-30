@@ -79,7 +79,7 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 //ServeIndex() is the http handler for the "/index" API endpoint.
 //It takes the requested directory passed as a url parameter "dir" i.e "/index?dir=/"
 //
-//It will then generate a index by calling api.GetQueryValue(), then writes it to the client as a
+//It will then generate a index by calling api.GetIndex(), then writes it to the client as a
 //map[string]*index.Index encoded in json
 func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
