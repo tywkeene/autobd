@@ -49,40 +49,7 @@ i.e `-p 123:8081` will cause the container to listen on port `123`.
 Same goes for the `-v` flag: `-v /a/b/c:/data` will mount `/a/b/c` (on the host) to `/data/` inside the container
 
 ## The API
-
-There are currently two functional endpoints to worry about
-
-`/v0/manifest?dir=<dirname>` and `/v0/sync?grab=<filename>`
-
-The manifest endpoint will return a json encoded recursive directory listing of the requested directory.
-
-The sync endpoint will transfer (or tarball and transfer, in the case of directories) the requested file.
-
-The last endpoint is `/version`, it simply returns a json encoded struct containing the version information about
-the server and API.
-
-autobd supports gzip compression and all replies are gzip'd by default.
-```
-$ curl -H 'Accept-Encoding: gzip' 'http://localhost:8081/v0/manifest?dir=/a' | gzip -d
-{
-    "/a/d": {
-      "name": "/a/d",
-      "size": 4096,
-      "lastModified": "2015-05-26T06:12:31.505764208Z",
-      "fileMode": 2147484141,
-      "isDir": true,
-      "files": {
-        "/a/d/p": {
-          "name": "/a/d/p",
-          "size": 4096,
-          "lastModified": "2015-05-26T06:12:31.47243054Z",
-          "fileMode": 2147484141,
-          "isDir": true
-        }
-      }
-    }
-  }
-  ```
+See [API.md](https://github.com/tywkeene/autobd/blob/master/API.md)
 
 ## Contributing
 
