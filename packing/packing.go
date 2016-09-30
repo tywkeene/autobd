@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"github.com/tywkeene/autobd/options"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -21,7 +20,6 @@ func UnpackDir(source io.Reader) error {
 		}
 
 		filename := header.Name
-		log.Println("Unpacking: ", filename)
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -104,7 +102,6 @@ func PackDir(srcPath string, dest io.Writer) error {
 	tw := tar.NewWriter(dest)
 	defer tw.Close()
 
-	log.Println("Packing directory: ", srcPath)
 	err = filepath.Walk(absolutePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

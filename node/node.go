@@ -3,11 +3,11 @@ package node
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/server"
 	"github.com/tywkeene/autobd/version"
-	"log"
 	"strings"
 	"time"
 )
@@ -26,7 +26,7 @@ func newNode(config options.NodeConf) *Node {
 		servers[url] = server.NewServer(url)
 	}
 	UUID := uuid.NewV4().String()
-	log.Println("Generated node UUID:", UUID)
+	log.Info("Generated node UUID: ", UUID)
 	return &Node{servers, UUID, config}
 }
 
@@ -59,11 +59,11 @@ func (node *Node) StartHeart() {
 				}
 				_, err := server.SendHeartbeat(node.UUID)
 				if err != nil {
-					log.Println(err)
+					log.Error(err)
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
 						server.Online = false
-						log.Println(server.Address, "has missed max beats, ignoring")
+						log.Error(server.Address + " has missed max beats, ignoring")
 					}
 				}
 			}
@@ -79,13 +79,13 @@ func (node *Node) ValidateAndIdentifyServers() error {
 		}
 		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
 			if err := node.validateServerVersion(remoteVer); err != nil {
-				log.Println(err)
+				log.Error(err)
 				return err
 			}
 		}
 		_, err = server.IdentifyWithServer(node.UUID)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			continue
 		}
 	}
@@ -97,7 +97,7 @@ func (node *Node) UpdateLoop() error {
 	if err := node.ValidateAndIdentifyServers(); err != nil {
 		return err
 	}
-	log.Printf("Running as a node. Updating every %s with %s\n",
+	log.Printf("Running as a node. Updating every %s with %s",
 		node.Config.UpdateInterval, node.Config.Servers)
 
 	updateInterval, err := time.ParseDuration(node.Config.UpdateInterval)
@@ -108,32 +108,32 @@ func (node *Node) UpdateLoop() error {
 		time.Sleep(updateInterval)
 		for _, server := range node.Servers {
 			if server.Online == false {
-				log.Printf("(!!) (offline) Skipping %s...\n", server.Address)
+				log.Info("Skipping offline server: ", server.Address)
 				continue
 			}
-			log.Printf(" (??) Updating with %s...\n", server.Address)
+			log.Info("Updating with ", server.Address)
 			need, err := server.CompareIndex(node.Config.TargetDirectory, node.UUID)
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 				continue
 			}
 
 			if len(need) == 0 {
-				log.Println("(OK) In sync with", server.Address)
+				log.Info("In sync with ", server.Address)
 				continue
 			}
 			for _, object := range need {
-				log.Printf(" (!=) Need %s from %s\n", object.Name, server.Address)
+				log.Printf("Need %s from %s\n", object.Name, server.Address)
 				if object.IsDir == true {
 					err := server.RequestSyncDir(object.Name, node.UUID)
 					if err != nil {
-						log.Println(err)
+						log.Error(err)
 						continue
 					}
 				} else if object.IsDir == false {
 					err := server.RequestSyncFile(object.Name, node.UUID)
 					if err != nil {
-						log.Println(err)
+						log.Error(err)
 						continue
 					}
 				}

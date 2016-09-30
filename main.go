@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/version"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -60,14 +60,13 @@ func main() {
 		}
 	}
 	if options.Config.Cores > runtime.NumCPU() {
-		log.Println("Requested processor value greater than number of actual processors, using default")
+		log.Error("Requested processor value greater than number of actual processors, using default")
 	} else {
-		log.Printf("Using %d processors\n", options.Config.Cores)
 		runtime.GOMAXPROCS(options.Config.Cores)
 	}
 	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
 	if options.Config.Ssl == true {
-		log.Printf("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
+		log.Info("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
 		log.Panic(http.ListenAndServeTLS(":"+options.Config.ApiPort, options.Config.Cert, options.Config.Key, nil))
 	} else {
 		log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))

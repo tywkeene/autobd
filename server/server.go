@@ -7,12 +7,12 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
+	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -64,7 +64,7 @@ func (server *Server) Get(endpoint string) ([]byte, error) {
 func writeFile(filename string, source io.Reader) error {
 	writer, err := os.Create(filename)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	}
 	defer writer.Close()
@@ -73,7 +73,7 @@ func writeFile(filename string, source io.Reader) error {
 }
 
 func (server *Server) RequestVersion() (*version.VersionInfo, error) {
-	log.Println("(??) Requesting version from", server.Address)
+	log.Info("Requesting version from ", server.Address)
 	resp, err := http.Get(server.Address + "/version")
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 }
 
 func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
-	log.Printf(" (??) Requesting index for directory %s from %s", dir, server.Address)
+	log.Printf("Requesting index for directory %s from %s", dir, server.Address)
 	buffer, err := server.Get("/index?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.I
 }
 
 func (server *Server) RequestSyncDir(file string, uuid string) error {
-	log.Printf(" (REQ) Requesting sync of directory '%s' from %s", file, server.Address)
+	log.Printf("Requesting sync of directory '%s' from %s", file, server.Address)
 	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
@@ -126,7 +126,7 @@ func (server *Server) RequestSyncDir(file string, uuid string) error {
 }
 
 func (server *Server) RequestSyncFile(file string, uuid string) error {
-	log.Printf(" (REQ) Requesting sync of file '%s' from %s", file, server.Address)
+	log.Printf("Requesting sync of file '%s' from %s", file, server.Address)
 	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 		//If it is a file and does exist, compare checksums
 		if existsLocally == true && object.IsDir == false {
 			if local[objName].Checksum != remote[objName].Checksum {
-				log.Println(" (!=) Checksum mismatch:", objName)
+				log.Info("Checksum mismatch:", objName)
 				need = append(need, remote[objName])
 				continue
 			}

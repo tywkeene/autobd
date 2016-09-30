@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	log "github.com/Sirupsen/logrus"
 	"os"
 )
 
@@ -63,7 +64,7 @@ func GetOptions() {
 	}
 
 	if Config.Root == "" {
-		fmt.Println("Must specify root directory")
+		log.Panic("Must specify root directory")
 		os.Exit(-1)
 	}
 

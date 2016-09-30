@@ -7,13 +7,13 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/logging"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -61,15 +61,17 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
 		return ""
 	}
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
-		log.Println(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
-		return ""
+		if name != "uuid" {
+			log.Error(err)
+			logging.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
+			return ""
+		}
 	}
 	return value
 }
@@ -84,6 +86,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
+		log.Error("Invalid or empty node UUID")
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
@@ -91,13 +94,13 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
-		log.Println("No directory defined")
+		log.Error("No directory defined")
 		logging.LogHttpErr(w, r, fmt.Errorf("Must define directory"), http.StatusInternalServerError)
 		return
 	}
 	dirIndex, err := index.GetIndex(dir)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting index"), http.StatusInternalServerError)
 		return
 	}
@@ -130,6 +133,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
+		log.Error("Invalid or empty node UUID")
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
@@ -139,21 +143,21 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	}
 	fd, err := os.Open(grab)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	if info.IsDir() == true {
 		w.Header().Set("Content-Type", "application/x-tar")
 		if err := packing.PackDir(grab, w); err != nil {
-			log.Println(err)
+			log.Error(err)
 			logging.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
@@ -171,12 +175,11 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	version := GetQueryValue("version", w, r)
-	log.Printf("New node [UUID: %s Address: %s Version: %s]", uuid, r.RemoteAddr, version)
 	if CurrentNodes == nil {
 		CurrentNodes = make(map[string]*Node)
-		log.Println("Initialized node list")
 	}
 	CurrentNodes[uuid] = &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), false}
+	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
 }
 
 func updateNodeSynced(uuid string, val bool) {
@@ -209,6 +212,7 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
+		log.Error("Invalid or empty node UUID")
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
