@@ -12,7 +12,6 @@ fi
 
 build_image "node"
 
-SEED_SERVER="https://172.18.0.2:8080"
 ETC_DIR="/home/$USER/etc/autobd"
 DATA_DIR="/home/$USER/data/autobd-nodes/node"
 
