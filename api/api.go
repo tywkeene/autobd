@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/logging"
+	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
@@ -218,7 +219,9 @@ func SetupRoutes() {
 	http.HandleFunc("/v"+version.Major()+"/index", GzipHandler(ServeIndex))
 	http.HandleFunc("/v"+version.Major()+"/sync", GzipHandler(ServeSync))
 	http.HandleFunc("/v"+version.Major()+"/identify", GzipHandler(Identify))
-	http.HandleFunc("/v"+version.Major()+"/nodes", GzipHandler(ListNodes))
+	if options.Config.NodeEndpoint == true {
+		http.HandleFunc("/v"+version.Major()+"/nodes", GzipHandler(ListNodes))
+	}
 	http.HandleFunc("/v"+version.Major()+"/heartbeat", GzipHandler(HeartBeat))
 	http.HandleFunc("/version", GzipHandler(ServeServerVer))
 }
