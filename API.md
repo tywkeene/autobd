@@ -104,7 +104,10 @@ Returns: Nothing
 ## /nodes
 Description: Returns a JSON encoded list describing the nodes registered with the server
 
-Arguments: None
+Arguments:
+
+```uuid=<registered node UUID>``` The node requesting the node list, must already be identified on the server
+
 
 Example:
 ```
