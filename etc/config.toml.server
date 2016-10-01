@@ -5,16 +5,22 @@ root_dir = "/home/autobd/data/"
 api_port = "8080"
 
 #Use tls/ssl
-use_ssl = true
+use_ssl = false
 
 #Path to the TLS certificate to use when running as server
 tls_cert = "/home/autobd/secret/cert.pem"
 
 #Path to the key associated with the TLS certificate used by the server
-tls_key = "/home/autobd/secret/key.pem"
+tls_key= "/home/autobd/secret/key.pem"
 
 #Run as a node
 run_as_node = false
 
 #Enable the nodes endpoint (emits json metadata on all nodes)
-node_endpoint = true
+node_endpoint = false
+
+#How often the server will update the status of its nodes
+heartbeat_tracker_interval = "5s"
+
+#How long a node can go without a heartbeat before it's marked offline
+heartbeat_offline = "10s"
