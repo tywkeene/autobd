@@ -121,10 +121,11 @@ Description: Updates the node's status on the server
 Arguments:
 
 ```uuid=<registered node UUID>``` The node requesting to be updated, must already be identified on the server
+```synced=<bool>``` Is this node currently synced with the server?
 
 Example:
 ```
-http://host:8080/v0/heartbeat?uuid=a468d5d0-56b8-4b0d-be2f-08b7d612b055
+http://host:8080/v0/heartbeat?uuid=a468d5d0-56b8-4b0d-be2f-08b7d612b055&synced=true
 ```
 
 Returns: Nothing
