@@ -188,6 +188,12 @@ func validateNode(uuid string) bool {
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
+	uuid := GetQueryValue("uuid", w, r)
+	if validateNode(uuid) == false {
+		log.Error("Invalid or empty node UUID")
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		return
+	}
 	serial, _ := json.MarshalIndent(&CurrentNodes, " ", " ")
 	io.WriteString(w, string(serial))
 }
