@@ -111,7 +111,7 @@ Arguments:
 
 Example:
 ```
-http://host:8080/v0/nodes
+http://host:8080/v0/nodes?uuid=a468d5d0-56b8-4b0d-be2f-08b7d612b055
 ```
 
 
