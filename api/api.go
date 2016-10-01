@@ -17,18 +17,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Node struct {
-	Address string
-	Version string
-	Online  string
-	Synced  bool
+	Address    string //Address of the node
+	Version    string //Version of the node
+	LastOnline string //Timestamp of when the node last sent a heartbeat
+	IsOnline   bool   //Is the node currently online?
+	Synced     bool   //Is the node synced with this server?
 }
 
-var CurrentNodes map[string]*Node
+var CurrentNodes map[string]*Node //Currently registered nodes indexed by uuid
 
 type gzipResponseWriter struct {
 	io.Writer
@@ -90,7 +92,6 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
-	updateNodeOnline(uuid)
 
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
@@ -164,34 +165,20 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
-	updateNodeSynced(uuid, true)
-	updateNodeOnline(uuid)
+	updateNodeStatus(uuid, true, true)
 }
 
-//Identify() is the http handler for the "/identify" API endpoint
-//It takes a node UUID and node version as json encoded strings
-//The node is added to the CurrentNodes map, with the RFC850 timestamp
-func Identify(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
-	uuid := GetQueryValue("uuid", w, r)
-	version := GetQueryValue("version", w, r)
-	if CurrentNodes == nil {
-		CurrentNodes = make(map[string]*Node)
-	}
-	CurrentNodes[uuid] = &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), false}
-	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
-}
-
-func updateNodeSynced(uuid string, val bool) {
+//Update the online status and timestamp of a node by uuid
+func updateNodeStatus(uuid string, online bool, synced bool) {
 	node := CurrentNodes[uuid]
-	node.Synced = val
+	if online == true {
+		node.LastOnline = time.Now().Format(time.RFC850)
+	}
+	node.IsOnline = online
+	node.Synced = synced
 }
 
-func updateNodeOnline(address string) {
-	node := CurrentNodes[address]
-	node.Online = time.Now().Format(time.RFC850)
-}
-
+//Validate a node uuid
 func validateNode(uuid string) bool {
 	_, ok := CurrentNodes[uuid]
 	return ok
@@ -205,18 +192,60 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(serial))
 }
 
+//StartHeartBeatTracker() is go routine that will periodically update the status of all
+//nodes currently registered with the server
+func StartHeartBeatTracker() {
+	log.Infof("Updating nodes status every %s", options.Config.HeartBeatTrackInterval)
+	interval, err := time.ParseDuration(options.Config.HeartBeatTrackInterval)
+	cutoff, err := time.ParseDuration(options.Config.HeartBeatOffline)
+	if err != nil {
+		log.Panic(err)
+	}
+	for {
+		time.Sleep(interval)
+		for uuid, node := range CurrentNodes {
+			then, err := time.Parse(time.RFC850, node.LastOnline)
+			if err != nil {
+				log.Panic(err)
+			}
+			duration := time.Since(then)
+			if duration > cutoff && node.IsOnline == true {
+				log.Warnf("Node %s has not checked in since %s ago, marking offline", uuid, duration)
+				updateNodeStatus(uuid, false, node.Synced)
+			}
+		}
+	}
+}
+
+//Identify() is the http handler for the "/identify" API endpoint
+//It takes a node UUID and node version as json encoded strings
+//The node is added to the CurrentNodes map, with the RFC850 timestamp
+func Identify(w http.ResponseWriter, r *http.Request) {
+	logging.LogHttp(r)
+	uuid := GetQueryValue("uuid", w, r)
+	version := GetQueryValue("version", w, r)
+	if CurrentNodes == nil {
+		CurrentNodes = make(map[string]*Node)
+		go StartHeartBeatTracker()
+	}
+	CurrentNodes[uuid] = &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false}
+	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+}
+
 //HeartBeat() is the http handler for the "/heartbeat" API endpoint
 //Nodes will request this every config.HeartbeatInterval and the server will update
 //their respective online timestamp
 func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
+	nodeSyncedStatus := GetQueryValue("synced", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
-	updateNodeOnline(uuid)
+	synced, _ := strconv.ParseBool(nodeSyncedStatus)
+	updateNodeStatus(uuid, true, synced)
 }
 
 func SetupRoutes() {

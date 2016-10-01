@@ -21,7 +21,9 @@ func init() {
 	version.Set(CommitHash, ServerVer)
 	version.Print()
 	options.GetOptions()
-	api.SetupRoutes()
+	if options.Config.RunNode == false {
+		api.SetupRoutes()
+	}
 }
 
 func printLogo() {

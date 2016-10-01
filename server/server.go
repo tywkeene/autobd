@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 )
 
 type Server struct {
@@ -188,6 +189,6 @@ func (server *Server) IdentifyWithServer(uuid string) ([]byte, error) {
 	return server.Get("/identify?uuid=" + uuid + "&version=" + version.Server())
 }
 
-func (server *Server) SendHeartbeat(uuid string) ([]byte, error) {
-	return server.Get("/heartbeat?uuid=" + uuid)
+func (server *Server) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
+	return server.Get("/heartbeat?uuid=" + uuid + "&synced=" + strconv.FormatBool(synced))
 }

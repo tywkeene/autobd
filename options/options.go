@@ -18,16 +18,18 @@ type NodeConf struct {
 }
 
 type Conf struct {
-	Root         string   `toml:"root_dir"`
-	ApiPort      string   `toml:"api_port"`
-	RunNode      bool     `toml:"run_as_node"`
-	NodeConfig   NodeConf `toml:"node"`
-	Cores        int      `toml:"cores"`
-	Server       string   `toml:"server"`
-	Cert         string   `toml:"tls_cert"`
-	Key          string   `toml:"tls_key"`
-	Ssl          bool     `toml:"use_ssl"`
-	NodeEndpoint bool     `toml:"node_endpoint"`
+	Root                   string   `toml:"root_dir"`
+	ApiPort                string   `toml:"api_port"`
+	RunNode                bool     `toml:"run_as_node"`
+	NodeConfig             NodeConf `toml:"node"`
+	Cores                  int      `toml:"cores"`
+	Server                 string   `toml:"server"`
+	Cert                   string   `toml:"tls_cert"`
+	Key                    string   `toml:"tls_key"`
+	Ssl                    bool     `toml:"use_ssl"`
+	NodeEndpoint           bool     `toml:"node_endpoint"`
+	HeartBeatTrackInterval string   `toml:"heartbeat_tracker_interval"`
+	HeartBeatOffline       string   `toml:"heartbeat_offline"`
 }
 
 var Config Conf
@@ -45,6 +47,8 @@ func GetOptions() {
 	flag.StringVar(&Config.Key, "tls-key", "", "Path to TLS key to use")
 	flag.BoolVar(&Config.Ssl, "ssl", true, "Use TLS/SSL")
 	flag.BoolVar(&Config.NodeEndpoint, "node-endpoint", false, "Enable or disable the /nodes endpoint that may reveal sensitive information")
+	flag.StringVar(&Config.HeartBeatTrackInterval, "heartbeat-track-interval", "30s", "How often update registered nodes status")
+	flag.StringVar(&Config.HeartBeatOffline, "heartbeat-offline", "5m", "How long a node can go without a heartbeat before it's marked offline")
 
 	flag.IntVar(&Config.NodeConfig.MaxMissedBeats, "missed-beats", 4, "How many heartbeats the server can miss before the node goes offline")
 	flag.StringVar(&Config.NodeConfig.HeartbeatInterval, "heartbeat-interval", "30s", "How often to send a heartbeat to the server")

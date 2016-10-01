@@ -15,6 +15,7 @@ import (
 type Node struct {
 	Servers map[string]*server.Server
 	UUID    string
+	Synced  bool
 	Config  options.NodeConf
 }
 
@@ -27,7 +28,7 @@ func newNode(config options.NodeConf) *Node {
 	}
 	UUID := uuid.NewV4().String()
 	log.Info("Generated node UUID: ", UUID)
-	return &Node{servers, UUID, config}
+	return &Node{servers, UUID, false, config}
 }
 
 func InitNode(config options.NodeConf) *Node {
@@ -57,7 +58,7 @@ func (node *Node) StartHeart() {
 				if server.Online == false {
 					continue
 				}
-				_, err := server.SendHeartbeat(node.UUID)
+				_, err := server.SendHeartbeat(node.UUID, node.Synced)
 				if err != nil {
 					log.Error(err)
 					server.MissedBeats++
@@ -120,6 +121,7 @@ func (node *Node) UpdateLoop() error {
 
 			if len(need) == 0 {
 				log.Info("In sync with ", server.Address)
+				node.Synced = true
 				continue
 			}
 			for _, object := range need {
