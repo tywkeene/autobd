@@ -34,6 +34,7 @@ func printLogo() {
 ██╔══██║██║   ██║   ██║   ██║   ██║██╔══██╗██║  ██║╚════╝██║╚██╗██║██║   ██║██║  ██║██╔══╝
 ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██████╔╝██████╔╝      ██║ ╚████║╚██████╔╝██████╔╝███████╗
 ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝       ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝
+Backing you up since whenever...
 	`
 	const server = `
  █████╗ ██╗   ██╗████████╗ ██████╗ ██████╗ ██████╗       ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗
@@ -42,6 +43,7 @@ func printLogo() {
 ██╔══██║██║   ██║   ██║   ██║   ██║██╔══██╗██║  ██║╚════╝╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
 ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██████╔╝██████╔╝      ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
 ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝       ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+Backing you up since right now...
 	`
 	if options.Config.RunNode == true {
 		fmt.Println(node)
@@ -52,13 +54,13 @@ func printLogo() {
 
 func main() {
 	if err := os.Chdir(options.Config.Root); err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	printLogo()
 	if options.Config.RunNode == true {
 		localNode := node.InitNode(options.Config.NodeConfig)
 		if err := localNode.UpdateLoop(); err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 	}
 	if options.Config.Cores > runtime.NumCPU() {
@@ -68,7 +70,7 @@ func main() {
 	}
 	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
 	if options.Config.Ssl == true {
-		log.Info("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
+		log.Infof("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
 		log.Panic(http.ListenAndServeTLS(":"+options.Config.ApiPort, options.Config.Cert, options.Config.Key, nil))
 	} else {
 		log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
