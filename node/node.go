@@ -72,6 +72,16 @@ func (node *Node) StartHeart() {
 	}(node.Config)
 }
 
+func (node *Node) CountOnlineServers() int {
+	var count int = 0
+	for _, server := range node.Servers {
+		if server.Online == true {
+			count++
+		}
+	}
+	return count
+}
+
 func (node *Node) ValidateAndIdentifyServers() error {
 	for _, server := range node.Servers {
 		remoteVer, err := server.RequestVersion()
@@ -107,6 +117,9 @@ func (node *Node) UpdateLoop() error {
 	}
 	for {
 		time.Sleep(updateInterval)
+		if node.CountOnlineServers() == 0 {
+			log.Panic("No servers online, dying")
+		}
 		for _, server := range node.Servers {
 			if server.Online == false {
 				log.Info("Skipping offline server: ", server.Address)

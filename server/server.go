@@ -22,7 +22,7 @@ import (
 type Server struct {
 	Address     string       //Server URL
 	MissedBeats int          //How many heartbeats the server has missed
-	Online      bool         //Is there server online
+	Online      bool         //Is this server online
 	Client      *http.Client //connection configuration for this server
 }
 
