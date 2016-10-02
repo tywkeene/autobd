@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Autobd : autobd is an automated backup daemon.">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Autobd</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/tywkeene/autobd">View on GitHub</a>
+
+          <h1 id="project_title">Autobd</h1>
+          <h2 id="project_tagline">autobd is an automated backup daemon.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/tywkeene/autobd/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/tywkeene/autobd/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p><img src="logo.png?raw=true" alt="autobd" title="autobd"></p>
+
+<p><a href="http://waffle.io/tywkeene/autobd"><img src="https://badge.waffle.io/tywkeene/autobd.svg?label=ready&amp;title=Ready" alt="Stories in Ready"></a>
+<a href="https://travis-ci.org/tywkeene/autobd"><img src="https://travis-ci.org/tywkeene/autobd.svg" alt="Build Status"></a>
+<a href="https://godoc.org/github.com/tywkeene/autobd"><img src="https://godoc.org/github.com/tywkeene/autobd?status.svg" alt="GoDoc"></a></p>
+
+<h2>
+<a id="getting-autobd" class="anchor" href="#getting-autobd" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting autobd</h2>
+
+<p>Golang is required, so <a href="https://golang.org/doc/install">get that</a>. Most versions should work but it's probably best to
+stick with at least 1.4.2 as that's what I'm developing on.</p>
+
+<p>After you have go installed, it's as simple as either cloning the git repo:</p>
+
+<p><code>git clone https://github.com/tywkeene/autobd</code></p>
+
+<p>or using go get:</p>
+
+<p><code>go get github.com/tywkeene/autobd</code></p>
+
+<p>and to build</p>
+
+<pre><code>$ cd autobd
+$ ./build.sh
+</code></pre>
+
+<h2>
+<a id="getting-it-running" class="anchor" href="#getting-it-running" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting it running</h2>
+
+<p>To run autobd , simply do: <code>./autobd -config etc/config.toml</code></p>
+
+<p>Autobd ships with two configuration files, config.toml.server and config.toml.node, to get you started running both</p>
+
+<h3>
+<a id="dockerfile" class="anchor" href="#dockerfile" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dockerfile</h3>
+
+<p>Autobd ships with two Dockerfiles and the scripts to deploy both server and node containers. You'll of course need <a href="https://docs.docker.com/engine/installation/">docker</a></p>
+
+<h4>
+<a id="scriptsdeploy-serversh" class="anchor" href="#scriptsdeploy-serversh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>scripts/deploy-server.sh</h4>
+
+<p>Usage: ./scripts/deploy-server.sh</p>
+
+<p>Removes old autobd-server container, builds a new image, and deploys a new autobd-server container using the arguments:</p>
+
+<pre><code>DATA_DIR="/home/$USER/data/server-data"
+SECRET_DIR="/home/$USER/secret"
+ETC_DIR="/home/$USER/etc/autobd"
+PORT=8080
+</code></pre>
+
+<p>These variables may be modified to suit your needs.</p>
+
+<h4>
+<a id="scriptsdeploy-nodessh" class="anchor" href="#scriptsdeploy-nodessh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>scripts/deploy-nodes.sh</h4>
+
+<p>Usage: ./scripts/deploy-nodes.sh n</p>
+
+<p>Builds new autobd-node images, and deploys n nodes</p>
+
+<h4>
+<a id="scriptskill-nodessh" class="anchor" href="#scriptskill-nodessh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>scripts/kill-nodes.sh</h4>
+
+<p>Usage: ./scripts/kill-nodes.sh n</p>
+
+<p>Runs <code>docker rm -f</code>for n nodes</p>
+
+<h4>
+<a id="scriptssetup-networksh" class="anchor" href="#scriptssetup-networksh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>scripts/setup-network.sh</h4>
+
+<p>Usage ./scripts/setup-network.sh</p>
+
+<p>Sets up a docker network for server and nodes to communicate. 
+(I basically just use this testing, may or may not be useful to you)</p>
+
+<h2>
+<a id="the-api" class="anchor" href="#the-api" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The API</h2>
+
+<p>See <a href="https://github.com/tywkeene/autobd/blob/master/API.md">API.md</a></p>
+
+<h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contributing</h2>
+
+<p>Open a pull request or issue with your idea or bug. Really. Anything wrong with anything anywhere, open a ticket and let me know,
+then we can work on it together :) (Just be sure to check the <a href="https://waffle.io/tywkeene/autobd">story board</a> before creating a new ticket)</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Autobd maintained by <a href="https://github.com/tywkeene">tywkeene</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
