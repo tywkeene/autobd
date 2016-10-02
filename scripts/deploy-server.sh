@@ -1,12 +1,12 @@
 #!/usr/bin/env sh
 
-function rm_container(){
+rm_container(){
     if docker ps -f name='$1' &> /dev/null; then
         echo "Removing old container: $(docker rm -f $1)"
     fi
 }
 
-function build_image(){
+build_image(){
     echo "Building $1..."
     docker rmi -f autobd:server
     docker build --rm -t autobd:$1 -f docker/Dockerfile.$1 .
