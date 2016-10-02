@@ -19,6 +19,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,7 @@ type Node struct {
 }
 
 var CurrentNodes map[string]*Node //Currently registered nodes indexed by uuid
+var lock = sync.RWMutex{}         // For synchronized access to CurrentNodes
 
 type gzipResponseWriter struct {
 	io.Writer
@@ -96,7 +98,6 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
 		log.Error("No directory defined")
-		logging.LogHttpErr(w, r, fmt.Errorf("Must define directory"), http.StatusInternalServerError)
 		return
 	}
 	dirIndex, err := index.GetIndex(dir)
@@ -168,9 +169,30 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	updateNodeStatus(uuid, true, true)
 }
 
+//Add a node to the CurrentNodes map synchronously
+func getNodeByUUID(uuid string) *Node {
+	lock.RLock()
+	defer lock.RUnlock()
+	if CurrentNodes == nil {
+		return nil
+	}
+	return CurrentNodes[uuid]
+}
+
+//Get a node from the CurrentNodes map synchronously
+func addNode(uuid string, node *Node) {
+	lock.RLock()
+	defer lock.RUnlock()
+
+	if CurrentNodes == nil {
+		CurrentNodes = make(map[string]*Node)
+	}
+	CurrentNodes[uuid] = node
+}
+
 //Update the online status and timestamp of a node by uuid
 func updateNodeStatus(uuid string, online bool, synced bool) {
-	node := CurrentNodes[uuid]
+	node := getNodeByUUID(uuid)
 	if online == true {
 		node.LastOnline = time.Now().Format(time.RFC850)
 	}
@@ -180,8 +202,10 @@ func updateNodeStatus(uuid string, online bool, synced bool) {
 
 //Validate a node uuid
 func validateNode(uuid string) bool {
-	_, ok := CurrentNodes[uuid]
-	return ok
+	if node := getNodeByUUID(uuid); node == nil {
+		return false
+	}
+	return true
 }
 
 //ListNodes() is the http handler for the "/nodes" API endpoint
@@ -194,6 +218,8 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
 		return
 	}
+	lock.RLock()
+	defer lock.RUnlock()
 	serial, _ := json.MarshalIndent(&CurrentNodes, " ", " ")
 	io.WriteString(w, string(serial))
 }
@@ -209,6 +235,7 @@ func StartHeartBeatTracker() {
 	}
 	for {
 		time.Sleep(interval)
+		lock.RLock()
 		for uuid, node := range CurrentNodes {
 			then, err := time.Parse(time.RFC850, node.LastOnline)
 			if err != nil {
@@ -220,6 +247,7 @@ func StartHeartBeatTracker() {
 				updateNodeStatus(uuid, false, node.Synced)
 			}
 		}
+		lock.RUnlock()
 	}
 }
 
@@ -230,11 +258,13 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	version := GetQueryValue("version", w, r)
+	lock.RLock()
+	defer lock.RUnlock()
 	if CurrentNodes == nil {
 		CurrentNodes = make(map[string]*Node)
 		go StartHeartBeatTracker()
 	}
-	CurrentNodes[uuid] = &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false}
+	addNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
 	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
 }
 

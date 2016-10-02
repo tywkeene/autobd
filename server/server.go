@@ -137,7 +137,7 @@ func (server *Server) RequestSyncFile(file string, uuid string) error {
 	return err
 }
 
-func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
+func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
 	need := make([]*index.Index, 0)
 	for objName, object := range remote {
 		_, existsLocally := local[object.Name] //Does it exist on the node?
@@ -149,7 +149,7 @@ func compareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 
 		// If it does, and it's a directory, and it has children
 		if existsLocally == true && object.IsDir == true && object.Files != nil {
-			dirNeed := compareDirs(local[objName].Files, object.Files) //Scan the children
+			dirNeed := CompareDirs(local[objName].Files, object.Files) //Scan the children
 			need = append(need, dirNeed...)
 			continue
 		}
@@ -181,7 +181,7 @@ func (server *Server) CompareIndex(target string, uuid string) ([]*index.Index, 
 	if err != nil {
 		return nil, err
 	}
-	need := compareDirs(localIndex, remoteIndex)
+	need := CompareDirs(localIndex, remoteIndex)
 	return need, nil
 }
 
