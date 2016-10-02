@@ -1,5 +1,6 @@
 #!/bin/bash
-SERVER="0.0.4"
+API="0.0.5"
+NODE="0.0.5"
 
 git diff-files --quiet
 if [ "$?" != 0 ]; then

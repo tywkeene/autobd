@@ -1,4 +1,4 @@
 #!/bin/bash
 
 source ./VERSION
-go build -v -ldflags "-X main.ServerVer=$SERVER -X main.CommitHash=$COMMIT" github.com/tywkeene/autobd
+go build -v -ldflags "-X main.APIVer=$API -X main.NodeVer=$NODE -X main.CommitHash=$COMMIT" github.com/tywkeene/autobd

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	log "github.com/Sirupsen/logrus"
 	"os"
 )
 
@@ -30,6 +29,8 @@ type Conf struct {
 	NodeEndpoint           bool     `toml:"node_endpoint"`
 	HeartBeatTrackInterval string   `toml:"heartbeat_tracker_interval"`
 	HeartBeatOffline       string   `toml:"heartbeat_offline"`
+	Version                bool
+	VersionJSON            bool
 }
 
 var Config Conf
@@ -49,6 +50,8 @@ func GetOptions() {
 	flag.BoolVar(&Config.NodeEndpoint, "node-endpoint", false, "Enable or disable the /nodes endpoint that may reveal sensitive information")
 	flag.StringVar(&Config.HeartBeatTrackInterval, "heartbeat-track-interval", "30s", "How often update registered nodes status")
 	flag.StringVar(&Config.HeartBeatOffline, "heartbeat-offline", "5m", "How long a node can go without a heartbeat before it's marked offline")
+	flag.BoolVar(&Config.Version, "version", false, "Print version information and exit")
+	flag.BoolVar(&Config.VersionJSON, "json-version", false, "Print version information as a JSON encoded struct and exit")
 
 	flag.IntVar(&Config.NodeConfig.MaxMissedBeats, "missed-beats", 4, "How many heartbeats the server can miss before the node goes offline")
 	flag.StringVar(&Config.NodeConfig.HeartbeatInterval, "heartbeat-interval", "30s", "How often to send a heartbeat to the server")
@@ -65,11 +68,6 @@ func GetOptions() {
 			os.Exit(-1)
 		}
 		fmt.Printf("Configration file options in %s overriding command line options\n", configFile)
-	}
-
-	if Config.Root == "" {
-		log.Panic("Must specify root directory")
-		os.Exit(-1)
 	}
 
 	if Config.RunNode == true && len(Config.NodeConfig.Servers) == 0 {

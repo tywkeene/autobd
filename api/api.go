@@ -107,7 +107,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.Server())
+	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
 	io.WriteString(w, string(serial))
 
 }
@@ -116,10 +116,10 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	logging.LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.Server(), version.Commit()}, "  ", "  ")
+	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.GetAPIVersion(), version.GetNodeVersion(), version.GetCommit()}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.Server())
+	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
 	io.WriteString(w, string(serialVer))
 }
 
@@ -255,12 +255,12 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetupRoutes() {
-	http.HandleFunc("/v"+version.Major()+"/index", GzipHandler(ServeIndex))
-	http.HandleFunc("/v"+version.Major()+"/sync", GzipHandler(ServeSync))
-	http.HandleFunc("/v"+version.Major()+"/identify", GzipHandler(Identify))
+	http.HandleFunc("/v"+version.GetMajor()+"/index", GzipHandler(ServeIndex))
+	http.HandleFunc("/v"+version.GetMajor()+"/sync", GzipHandler(ServeSync))
+	http.HandleFunc("/v"+version.GetMajor()+"/identify", GzipHandler(Identify))
 	if options.Config.NodeEndpoint == true {
-		http.HandleFunc("/v"+version.Major()+"/nodes", GzipHandler(ListNodes))
+		http.HandleFunc("/v"+version.GetMajor()+"/nodes", GzipHandler(ListNodes))
 	}
-	http.HandleFunc("/v"+version.Major()+"/heartbeat", GzipHandler(HeartBeat))
+	http.HandleFunc("/v"+version.GetMajor()+"/heartbeat", GzipHandler(HeartBeat))
 	http.HandleFunc("/version", GzipHandler(ServeServerVer))
 }

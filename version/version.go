@@ -1,48 +1,61 @@
 package version
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 var (
-	CommitHash string
-	ServerVer  string
+	CommitHash  string
+	APIVersion  string
+	NodeVersion string
 )
 
 type VersionInfo struct {
-	ServerVer  string `json:"server"`
-	CommitHash string `json:"commit"`
+	APIVersion  string `json:"api"`
+	NodeVersion string `json:"node"`
+	CommitHash  string `json:"commit"`
 }
 
 func Print() {
-	fmt.Printf("Autobd version %s (git commit %s)\n", ServerVer, CommitHash)
+	fmt.Printf("Autobd (API %s) (Node %s) (git commit %s)\n", APIVersion, NodeVersion, CommitHash)
 }
 
-func Set(commit string, server string) {
+func Set(commit string, api string, node string) {
 	CommitHash = commit
 	if CommitHash == "" {
 		CommitHash = "unknown"
 	}
-	ServerVer = server
+	APIVersion = api
+	NodeVersion = node
 }
 
-func Server() string {
-	return ServerVer
+func GetNodeVersion() string {
+	return NodeVersion
 }
 
-func Commit() string {
+func GetAPIVersion() string {
+	return APIVersion
+}
+
+func GetCommit() string {
 	return CommitHash
 }
 
-func Major() string {
-	return strings.Split(ServerVer, ".")[0]
+func GetMajor() string {
+	return strings.Split(APIVersion, ".")[0]
 }
 
-func Minor() string {
-	return strings.Split(ServerVer, ".")[1]
+func GetMinor() string {
+	return strings.Split(APIVersion, ".")[1]
 }
 
-func Patch() string {
-	return strings.Split(ServerVer, ".")[2]
+func GetPatch() string {
+	return strings.Split(APIVersion, ".")[2]
+}
+
+func JSON() string {
+	serial, _ := json.MarshalIndent(&VersionInfo{GetAPIVersion(), GetNodeVersion(), GetCommit()}, " ", " ")
+	return string(serial)
 }

@@ -35,7 +35,7 @@ func NewServer(address string) *Server {
 }
 
 func (server *Server) constructUrl(str string) string {
-	return server.Address + "/v" + version.Major() + str
+	return server.Address + "/v" + version.GetMajor() + str
 }
 
 func DeflateResponse(resp *http.Response) ([]byte, error) {
@@ -54,7 +54,7 @@ func (server *Server) Get(endpoint string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("User-Agent", "Autobd-node/"+version.Server())
+	req.Header.Set("User-Agent", "Autobd-node/"+version.GetAPIVersion())
 	resp, err := server.Client.Do(req)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (server *Server) CompareIndex(target string, uuid string) ([]*index.Index, 
 }
 
 func (server *Server) IdentifyWithServer(uuid string) ([]byte, error) {
-	return server.Get("/identify?uuid=" + uuid + "&version=" + version.Server())
+	return server.Get("/identify?uuid=" + uuid + "&version=" + version.GetAPIVersion())
 }
 
 func (server *Server) SendHeartbeat(uuid string, synced bool) ([]byte, error) {

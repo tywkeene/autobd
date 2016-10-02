@@ -37,14 +37,14 @@ func InitNode(config options.NodeConf) *Node {
 }
 
 func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
-	if version.Server() != remote.ServerVer {
+	if version.GetAPIVersion() != remote.APIVersion {
 		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
-			remote.ServerVer, version.Server())
+			remote.APIVersion, version.GetAPIVersion())
 	}
-	remoteMajor := strings.Split(remote.ServerVer, ".")[0]
-	if version.Major() != remoteMajor {
+	remoteMajor := strings.Split(remote.APIVersion, ".")[0]
+	if version.GetMajor() != remoteMajor {
 		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
-			remoteMajor, version.Major())
+			remoteMajor, version.GetMajor())
 	}
 	return nil
 }
