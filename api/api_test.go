@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/tywkeene/autobd/client"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
-	"github.com/tywkeene/autobd/server"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -133,7 +133,7 @@ func TestServeIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if need := server.CompareDirs(expectedIndex, respIndex.Files); len(need) > 0 {
+	if need := client.CompareDirs(expectedIndex, respIndex.Files); len(need) > 0 {
 		t.Fatal("Index mismatch")
 	}
 }

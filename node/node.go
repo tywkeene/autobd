@@ -5,16 +5,16 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
+	"github.com/tywkeene/autobd/client"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
-	"github.com/tywkeene/autobd/server"
 	"github.com/tywkeene/autobd/version"
 	"strings"
 	"time"
 )
 
 type Node struct {
-	Servers map[string]*server.Server
+	Servers map[string]*client.Client
 	UUID    string
 	Synced  bool
 	Config  options.NodeConf
@@ -23,9 +23,9 @@ type Node struct {
 var localNode *Node
 
 func newNode(config options.NodeConf) *Node {
-	servers := make(map[string]*server.Server, 0)
+	servers := make(map[string]*client.Client, 0)
 	for _, url := range config.Servers {
-		servers[url] = server.NewServer(url)
+		servers[url] = client.NewClient(url)
 	}
 	UUID := uuid.NewV4().String()
 	log.Info("Generated node UUID: ", UUID)
@@ -105,7 +105,7 @@ func (node *Node) ValidateAndIdentifyServers() error {
 	return nil
 }
 
-func (node *Node) SyncUp(need []*index.Index, s *server.Server) {
+func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 	for _, object := range need {
 		log.Printf("Need %s from %s\n", object.Name, s.Address)
 		if object.IsDir == true {

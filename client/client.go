@@ -1,6 +1,6 @@
-//package server provides all the necessary logic when interacting with
+//package client provides all the necessary logic when interacting with
 //an autobd server. Node side logic resides in package node
-package server
+package client
 
 import (
 	"bytes"
@@ -19,23 +19,24 @@ import (
 	"strconv"
 )
 
-type Server struct {
+//The Client struct describes a connection to a server, it's status, and an http client
+type Client struct {
 	Address     string       //Server URL
 	MissedBeats int          //How many heartbeats the server has missed
 	Online      bool         //Is this server online
-	Client      *http.Client //connection configuration for this server
+	http        *http.Client //connection configuration for this server
 }
 
-func NewServer(address string) *Server {
+func NewClient(address string) *Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	return &Server{address, 0, true, client}
+	return &Client{address, 0, true, client}
 }
 
-func (server *Server) constructUrl(str string) string {
-	return server.Address + "/v" + version.GetMajor() + str
+func (client *Client) constructUrl(str string) string {
+	return client.Address + "/v" + version.GetMajor() + str
 }
 
 func DeflateResponse(resp *http.Response) ([]byte, error) {
@@ -47,15 +48,15 @@ func DeflateResponse(resp *http.Response) ([]byte, error) {
 	return ioutil.ReadAll(reader)
 }
 
-func (server *Server) Get(endpoint string) ([]byte, error) {
-	url := server.constructUrl(endpoint)
+func (client *Client) Get(endpoint string) ([]byte, error) {
+	url := client.constructUrl(endpoint)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("User-Agent", "Autobd-node/"+version.GetAPIVersion())
-	resp, err := server.Client.Do(req)
+	resp, err := client.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +74,8 @@ func writeFile(filename string, source io.Reader) error {
 	return nil
 }
 
-func (server *Server) RequestVersion() (*version.VersionInfo, error) {
-	resp, err := http.Get(server.Address + "/version")
+func (client *Client) RequestVersion() (*version.VersionInfo, error) {
+	resp, err := http.Get(client.Address + "/version")
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +89,8 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 	return ver, nil
 }
 
-func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
-	buffer, err := server.Get("/index?dir=" + dir + "&uuid=" + uuid)
+func (client *Client) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
+	buffer, err := client.Get("/index?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.I
 	return remoteIndex, nil
 }
 
-func (server *Server) RequestSyncDir(file string, uuid string) error {
-	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
+func (client *Client) RequestSyncDir(file string, uuid string) error {
+	buffer, err := client.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
 	}
@@ -123,8 +124,8 @@ func (server *Server) RequestSyncDir(file string, uuid string) error {
 	return err
 }
 
-func (server *Server) RequestSyncFile(file string, uuid string) error {
-	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
+func (client *Client) RequestSyncFile(file string, uuid string) error {
+	buffer, err := client.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
 	}
@@ -168,8 +169,8 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 	return need
 }
 
-func (server *Server) CompareIndex(target string, uuid string) ([]*index.Index, error) {
-	remoteIndex, err := server.RequestIndex(target, uuid)
+func (client *Client) CompareIndex(target string, uuid string) ([]*index.Index, error) {
+	remoteIndex, err := client.RequestIndex(target, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -181,10 +182,10 @@ func (server *Server) CompareIndex(target string, uuid string) ([]*index.Index, 
 	return need, nil
 }
 
-func (server *Server) IdentifyWithServer(uuid string) ([]byte, error) {
-	return server.Get("/identify?uuid=" + uuid + "&version=" + version.GetAPIVersion())
+func (client *Client) IdentifyWithServer(uuid string) ([]byte, error) {
+	return client.Get("/identify?uuid=" + uuid + "&version=" + version.GetAPIVersion())
 }
 
-func (server *Server) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
-	return server.Get("/heartbeat?uuid=" + uuid + "&synced=" + strconv.FormatBool(synced))
+func (client *Client) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
+	return client.Get("/heartbeat?uuid=" + uuid + "&synced=" + strconv.FormatBool(synced))
 }
