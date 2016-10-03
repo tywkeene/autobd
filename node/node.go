@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
+	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/server"
 	"github.com/tywkeene/autobd/version"
@@ -64,7 +65,7 @@ func (node *Node) StartHeart() {
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
 						server.Online = false
-						log.Error(server.Address + " has missed max beats, ignoring")
+						log.Error(server.Address + " has missed max heartbeats, ignoring")
 					}
 				}
 			}
@@ -104,6 +105,25 @@ func (node *Node) ValidateAndIdentifyServers() error {
 	return nil
 }
 
+func (node *Node) SyncUp(need []*index.Index, s *server.Server) {
+	for _, object := range need {
+		log.Printf("Need %s from %s\n", object.Name, s.Address)
+		if object.IsDir == true {
+			err := s.RequestSyncDir(object.Name, node.UUID)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+		} else if object.IsDir == false {
+			err := s.RequestSyncFile(object.Name, node.UUID)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+		}
+	}
+}
+
 func (node *Node) UpdateLoop() error {
 	if err := node.ValidateAndIdentifyServers(); err != nil {
 		return err
@@ -120,39 +140,22 @@ func (node *Node) UpdateLoop() error {
 		if node.CountOnlineServers() == 0 {
 			log.Panic("No servers online, dying")
 		}
-		for _, server := range node.Servers {
-			if server.Online == false {
-				log.Info("Skipping offline server: ", server.Address)
+		for _, s := range node.Servers {
+			if s.Online == false {
+				log.Info("Skipping offline server: ", s.Address)
 				continue
 			}
-			log.Info("Updating with ", server.Address)
-			need, err := server.CompareIndex(node.Config.TargetDirectory, node.UUID)
+			need, err := s.CompareIndex(node.Config.TargetDirectory, node.UUID)
 			if err != nil {
 				log.Error(err)
 				continue
 			}
 
 			if len(need) == 0 {
-				log.Info("In sync with ", server.Address)
 				node.Synced = true
 				continue
 			}
-			for _, object := range need {
-				log.Printf("Need %s from %s\n", object.Name, server.Address)
-				if object.IsDir == true {
-					err := server.RequestSyncDir(object.Name, node.UUID)
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-				} else if object.IsDir == false {
-					err := server.RequestSyncFile(object.Name, node.UUID)
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-				}
-			}
+			node.SyncUp(need, s)
 		}
 	}
 	return nil

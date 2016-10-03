@@ -74,7 +74,6 @@ func writeFile(filename string, source io.Reader) error {
 }
 
 func (server *Server) RequestVersion() (*version.VersionInfo, error) {
-	log.Info("Requesting version from ", server.Address)
 	resp, err := http.Get(server.Address + "/version")
 	if err != nil {
 		return nil, err
@@ -90,7 +89,6 @@ func (server *Server) RequestVersion() (*version.VersionInfo, error) {
 }
 
 func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
-	log.Printf("Requesting index for directory %s from %s", dir, server.Address)
 	buffer, err := server.Get("/index?dir=" + dir + "&uuid=" + uuid)
 	if err != nil {
 		return nil, err
@@ -104,7 +102,6 @@ func (server *Server) RequestIndex(dir string, uuid string) (map[string]*index.I
 }
 
 func (server *Server) RequestSyncDir(file string, uuid string) error {
-	log.Printf("Requesting sync of directory '%s' from %s", file, server.Address)
 	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
@@ -127,7 +124,6 @@ func (server *Server) RequestSyncDir(file string, uuid string) error {
 }
 
 func (server *Server) RequestSyncFile(file string, uuid string) error {
-	log.Printf("Requesting sync of file '%s' from %s", file, server.Address)
 	buffer, err := server.Get("/sync?grab=" + file + "&uuid=" + uuid)
 	if err != nil {
 		return err
