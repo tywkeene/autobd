@@ -4,6 +4,7 @@ go:
     - 1.6
 
 script:
+    - ./scripts/test.sh
     - ./build.sh
 
 after_script:
