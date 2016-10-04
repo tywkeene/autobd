@@ -16,3 +16,10 @@ notifications:
             - tyrell.wkeene@gmail.com
         on_success: change
         on_failure: always
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/5a76f0d5acf7e446e7af
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: never     # options: [always|never|change] default: always
