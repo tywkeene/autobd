@@ -74,6 +74,8 @@ func InflateResponse(resp *http.Response) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
+//HTTP GET with autobd specific headers set, returns a gzip reader if the response is
+//gzipped, a normal response body otherwise
 func (client *Client) Get(endpoint string, queryValues map[string]string) ([]byte, error) {
 	request := client.ConstructRequest(endpoint, queryValues)
 	request.Header.Set("Accept-Encoding", "application/x-gzip")
@@ -170,6 +172,7 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 	for objName, object := range remote {
 		_, existsLocally := local[object.Name] //Does it exist on the node?
 
+		//If it doesn't exist on the node at all, we obviously need it
 		if existsLocally == false {
 			need = append(need, remote[objName])
 			continue
@@ -200,6 +203,7 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 	return need
 }
 
+//Compare a local and remote index, return a slice of needed indexes (or nil)
 func (client *Client) CompareIndex(target string, uuid string) ([]*index.Index, error) {
 	remoteIndex, err := client.RequestIndex(target, uuid)
 	if err != nil {
@@ -213,6 +217,7 @@ func (client *Client) CompareIndex(target string, uuid string) ([]*index.Index, 
 	return need, nil
 }
 
+//Identify with a server and tell it the node's version and uuid
 func (client *Client) IdentifyWithServer(uuid string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid
@@ -220,6 +225,7 @@ func (client *Client) IdentifyWithServer(uuid string) ([]byte, error) {
 	return client.Get("/identify", queryValues)
 }
 
+//Send a heartbeat to a server, updating the node's synced status
 func (client *Client) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid

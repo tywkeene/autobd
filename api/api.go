@@ -9,7 +9,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/index"
-	"github.com/tywkeene/autobd/logging"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
@@ -33,6 +32,16 @@ type Node struct {
 
 var CurrentNodes map[string]*Node //Currently registered nodes indexed by uuid
 var lock = sync.RWMutex{}         // For synchronized access to CurrentNodes
+
+func LogHttp(r *http.Request) {
+	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
+}
+
+func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
+	log.Errorf("Returned error \"%s\" (HTTP %s) to %s", err.Error(), http.StatusText(status), r.RemoteAddr)
+	serialErr, _ := json.Marshal(err.Error())
+	http.Error(w, string(serialErr), status)
+}
 
 type gzipResponseWriter struct {
 	io.Writer
@@ -66,14 +75,14 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
 		log.Error(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
+		LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
 		return ""
 	}
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
 		if name != "uuid" {
 			log.Error(err)
-			logging.LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
+			LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
 			return ""
 		}
 	}
@@ -86,12 +95,12 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 //It will then generate a index by calling api.GetIndex(), then writes it to the client as a
 //map[string]*index.Index encoded in json
 func ServeIndex(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 
@@ -103,7 +112,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	dirIndex, err := index.GetIndex(dir)
 	if err != nil {
 		log.Error(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Error getting index"), http.StatusInternalServerError)
+		LogHttpErr(w, r, fmt.Errorf("Error getting index"), http.StatusInternalServerError)
 		return
 	}
 	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
@@ -115,7 +124,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 //ServeServerVer() is the http handler for the "/version" http API endpoint.
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.GetAPIVersion(), version.GetNodeVersion(), version.GetCommit()}, "  ", "  ")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -131,11 +140,11 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 //If the file is a normal file, it will be served with http.ServeContent(), with the Content-Type http-header
 //set by http.ServeContent()
 func ServeSync(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	grab := GetQueryValue("grab", w, r)
@@ -145,20 +154,20 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	fd, err := os.Open(grab)
 	if err != nil {
 		log.Error(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+		LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
 	if err != nil {
 		log.Error(err)
-		logging.LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+		LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
 		return
 	}
 	if info.IsDir() == true {
 		if err := packing.PackDir(grab, w); err != nil {
 			log.Error(err)
-			logging.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
+			LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/x-tar")
@@ -210,11 +219,11 @@ func validateNode(uuid string) bool {
 //ListNodes() is the http handler for the "/nodes" API endpoint
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	lock.RLock()
@@ -254,7 +263,7 @@ func StartHeartBeatTracker() {
 //It takes a node UUID and node version as json encoded strings
 //The node is added to the CurrentNodes map, with the RFC850 timestamp
 func Identify(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	version := GetQueryValue("version", w, r)
 	lock.RLock()
@@ -271,12 +280,12 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 //Nodes will request this every config.HeartbeatInterval and the server will update
 //their respective online timestamp
 func HeartBeat(w http.ResponseWriter, r *http.Request) {
-	logging.LogHttp(r)
+	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	nodeSyncedStatus := GetQueryValue("synced", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	synced, _ := strconv.ParseBool(nodeSyncedStatus)

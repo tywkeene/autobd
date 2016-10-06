@@ -21,6 +21,7 @@ type Index struct {
 	Files    map[string]*Index `json:"files,omitempty"`
 }
 
+//Generate a sha512 checksum for 'path'
 func GetChecksum(path string) (string, error) {
 	file, err := os.Open(path)
 
@@ -61,6 +62,7 @@ func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDi
 	return &Index{name, checksum, size, modtime, mode, isDir, nil}
 }
 
+//Recursively genearate an index for dirPath
 func GetIndex(dirPath string) (map[string]*Index, error) {
 	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
 		dirPath = "./"
