@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -35,32 +36,53 @@ func NewClient(address string) *Client {
 	return &Client{address, 0, true, client}
 }
 
-func (client *Client) constructUrl(str string) string {
-	return client.Address + "/v" + version.GetMajor() + str
+func (client *Client) ConstructUrl(endpoint string) string {
+	urlStr, err := url.Parse(client.Address + "/v" + version.GetMajor() + endpoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return urlStr.String()
 }
 
-func DeflateResponse(resp *http.Response) ([]byte, error) {
-	reader, err := gzip.NewReader(resp.Body)
+func (client *Client) ConstructRequest(endpoint string, values map[string]string) *http.Request {
+	request, err := http.NewRequest("GET", client.ConstructUrl(endpoint), nil)
 	if err != nil {
-		return nil, err
+		log.Error(err)
+		return nil
 	}
-	defer reader.Close()
-	return ioutil.ReadAll(reader)
+
+	query := request.URL.Query()
+	for name, value := range values {
+		query.Add(name, value)
+	}
+	request.URL.RawQuery = query.Encode()
+	return request
 }
 
-func (client *Client) Get(endpoint string) ([]byte, error) {
-	url := client.constructUrl(endpoint)
-	req, err := http.NewRequest("GET", url, nil)
+//Check to see if the reponse is gzip'd, if it is, inflate it, if it's not, just return the
+//normal response body as-is
+func InflateResponse(resp *http.Response) ([]byte, error) {
+	if resp.Header.Get("Content-Encoding") == "application/x-gzip" {
+		reader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		buffer, err := ioutil.ReadAll(reader)
+		return buffer, err
+	}
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (client *Client) Get(endpoint string, queryValues map[string]string) ([]byte, error) {
+	request := client.ConstructRequest(endpoint, queryValues)
+	request.Header.Set("Accept-Encoding", "application/x-gzip")
+	request.Header.Set("User-Agent", "Autobd-node/"+version.GetAPIVersion())
+	response, err := client.http.Do(request)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("User-Agent", "Autobd-node/"+version.GetAPIVersion())
-	resp, err := client.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return DeflateResponse(resp)
+	return InflateResponse(response)
 }
 
 func writeFile(filename string, source io.Reader) error {
@@ -90,7 +112,11 @@ func (client *Client) RequestVersion() (*version.VersionInfo, error) {
 }
 
 func (client *Client) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
-	buffer, err := client.Get("/index?dir=" + dir + "&uuid=" + uuid)
+	queryValues := make(map[string]string)
+	queryValues["dir"] = dir
+	queryValues["uuid"] = uuid
+
+	buffer, err := client.Get("/index", queryValues)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +128,11 @@ func (client *Client) RequestIndex(dir string, uuid string) (map[string]*index.I
 	return remoteIndex, nil
 }
 
-func (client *Client) RequestSyncDir(file string, uuid string) error {
-	buffer, err := client.Get("/sync?grab=" + file + "&uuid=" + uuid)
+func (client *Client) RequestSyncDir(dir string, uuid string) error {
+	queryValues := make(map[string]string)
+	queryValues["grab"] = dir
+	queryValues["uuid"] = uuid
+	buffer, err := client.Get("/sync", queryValues)
 	if err != nil {
 		return err
 	}
@@ -114,18 +143,20 @@ func (client *Client) RequestSyncDir(file string, uuid string) error {
 	}
 
 	//make sure we create the directory tree if it's needed
-	if tree := path.Dir(file); tree != "" {
+	if tree := path.Dir(dir); tree != "" {
 		err := os.MkdirAll(tree, 0777)
 		if err != nil {
 			return err
 		}
 	}
-	err = writeFile(file, reader)
-	return err
+	return writeFile(dir, reader)
 }
 
 func (client *Client) RequestSyncFile(file string, uuid string) error {
-	buffer, err := client.Get("/sync?grab=" + file + "&uuid=" + uuid)
+	queryValues := make(map[string]string)
+	queryValues["grab"] = file
+	queryValues["uuid"] = uuid
+	buffer, err := client.Get("/sync", queryValues)
 	if err != nil {
 		return err
 	}
@@ -183,9 +214,15 @@ func (client *Client) CompareIndex(target string, uuid string) ([]*index.Index, 
 }
 
 func (client *Client) IdentifyWithServer(uuid string) ([]byte, error) {
-	return client.Get("/identify?uuid=" + uuid + "&version=" + version.GetAPIVersion())
+	queryValues := make(map[string]string)
+	queryValues["uuid"] = uuid
+	queryValues["version"] = version.GetNodeVersion()
+	return client.Get("/identify", queryValues)
 }
 
 func (client *Client) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
-	return client.Get("/heartbeat?uuid=" + uuid + "&synced=" + strconv.FormatBool(synced))
+	queryValues := make(map[string]string)
+	queryValues["uuid"] = uuid
+	queryValues["synced"] = strconv.FormatBool(synced)
+	return client.Get("/heartbeat", queryValues)
 }

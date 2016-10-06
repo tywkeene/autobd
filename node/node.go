@@ -53,6 +53,7 @@ func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
 func (node *Node) StartHeart() {
 	go func(config options.NodeConf) {
 		interval, _ := time.ParseDuration(config.HeartbeatInterval)
+		log.Info("Started heartbeat, updating every ", interval)
 		for {
 			time.Sleep(interval)
 			for _, server := range node.Servers {
@@ -83,7 +84,7 @@ func (node *Node) CountOnlineServers() int {
 	return count
 }
 
-func (node *Node) ValidateAndIdentifyServers() error {
+func (node *Node) ValidateAndIdentifyWithServers() error {
 	for _, server := range node.Servers {
 		remoteVer, err := server.RequestVersion()
 		if remoteVer == nil || err != nil {
@@ -125,7 +126,7 @@ func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 }
 
 func (node *Node) UpdateLoop() error {
-	if err := node.ValidateAndIdentifyServers(); err != nil {
+	if err := node.ValidateAndIdentifyWithServers(); err != nil {
 		return err
 	}
 	log.Printf("Running as a node. Updating every %s with %s",

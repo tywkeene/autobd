@@ -47,11 +47,11 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 //can, if not, simply use the normal http.ResponseWriter
 func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "application/x-gzip") {
 			fn(w, r)
 			return
 		}
-		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Content-Encoding", "application/x-gzip")
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
 		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
@@ -91,7 +91,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 
@@ -110,7 +110,6 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
 	io.WriteString(w, string(serial))
-
 }
 
 //ServeServerVer() is the http handler for the "/version" http API endpoint.
@@ -136,7 +135,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	grab := GetQueryValue("grab", w, r)
@@ -157,12 +156,12 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if info.IsDir() == true {
-		w.Header().Set("Content-Type", "application/x-tar")
 		if err := packing.PackDir(grab, w); err != nil {
 			log.Error(err)
 			logging.LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "application/x-tar")
 		return
 	}
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
@@ -215,7 +214,7 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	lock.RLock()
@@ -277,7 +276,7 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	nodeSyncedStatus := GetQueryValue("synced", w, r)
 	if validateNode(uuid) == false {
 		log.Error("Invalid or empty node UUID")
-		logging.LogHttpErr(w, r, fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized)
+		logging.LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
 		return
 	}
 	synced, _ := strconv.ParseBool(nodeSyncedStatus)

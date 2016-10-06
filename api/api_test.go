@@ -32,7 +32,7 @@ func TestGzip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "application/x-gzip")
 	handler.ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
@@ -62,7 +62,7 @@ func TestServeIndexNoUUID(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	expected := "Invalid node UUID"
+	expected := "Invalid or empty node UUID"
 	response := getResponseFromBody(t, recorder.Body)
 	if response != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
