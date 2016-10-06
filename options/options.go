@@ -17,18 +17,18 @@ type NodeConf struct {
 }
 
 type Conf struct {
-	Root                   string    `toml:"root_dir"`
-	ApiPort                string    `toml:"api_port"`
-	RunNode                bool      `toml:"run_as_node"`
-	NodeConfig             *NodeConf `toml:"node"`
-	Cores                  int       `toml:"cores"`
-	Server                 string    `toml:"server"`
-	Cert                   string    `toml:"tls_cert"`
-	Key                    string    `toml:"tls_key"`
-	Ssl                    bool      `toml:"use_ssl"`
-	NodeEndpoint           bool      `toml:"node_endpoint"`
-	HeartBeatTrackInterval string    `toml:"heartbeat_tracker_interval"`
-	HeartBeatOffline       string    `toml:"heartbeat_offline"`
+	Root                   string   `toml:"root_dir"`
+	ApiPort                string   `toml:"api_port"`
+	RunNode                bool     `toml:"run_as_node"`
+	NodeConfig             NodeConf `toml:"node"`
+	Cores                  int      `toml:"cores"`
+	Server                 string   `toml:"server"`
+	Cert                   string   `toml:"tls_cert"`
+	Key                    string   `toml:"tls_key"`
+	Ssl                    bool     `toml:"use_ssl"`
+	NodeEndpoint           bool     `toml:"node_endpoint"`
+	HeartBeatTrackInterval string   `toml:"heartbeat_tracker_interval"`
+	HeartBeatOffline       string   `toml:"heartbeat_offline"`
 	Version                bool
 	VersionJSON            bool
 }

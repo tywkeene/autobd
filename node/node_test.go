@@ -7,7 +7,7 @@ import (
 )
 
 func TestInitNode(t *testing.T) {
-	var config *options.NodeConf
+	var config options.NodeConf
 	var configFile string = "../etc/config.toml.node"
 
 	if _, err := toml.DecodeFile(configFile, config); err != nil {

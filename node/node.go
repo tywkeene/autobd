@@ -17,12 +17,12 @@ type Node struct {
 	Servers map[string]*client.Client
 	UUID    string
 	Synced  bool
-	Config  *options.NodeConf
+	Config  options.NodeConf
 }
 
 var localNode *Node
 
-func newNode(config *options.NodeConf) *Node {
+func newNode(config options.NodeConf) *Node {
 	servers := make(map[string]*client.Client, 0)
 	for _, url := range config.Servers {
 		servers[url] = client.NewClient(url)
@@ -32,7 +32,7 @@ func newNode(config *options.NodeConf) *Node {
 	return &Node{servers, UUID, false, config}
 }
 
-func InitNode(config *options.NodeConf) *Node {
+func InitNode(config options.NodeConf) *Node {
 	node := newNode(config)
 	return node
 }
@@ -51,7 +51,7 @@ func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
 }
 
 func (node *Node) StartHeart() {
-	go func(config *options.NodeConf) {
+	go func(config options.NodeConf) {
 		interval, _ := time.ParseDuration(config.HeartbeatInterval)
 		log.Info("Started heartbeat, updating every ", interval)
 		for {
