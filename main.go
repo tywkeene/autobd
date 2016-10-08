@@ -20,6 +20,9 @@ var (
 
 func init() {
 	options.GetOptions()
+	if err := os.Chdir(options.Config.Root); err != nil {
+		log.Panic(err)
+	}
 	version.Set(CommitHash, APIVer, NodeVer)
 	if options.Config.VersionJSON == true {
 		fmt.Println(version.JSON())
@@ -31,6 +34,9 @@ func init() {
 	}
 	if options.Config.RunNode == false {
 		api.SetupRoutes()
+        if err := api.ReadNodeMetadata(options.Config.NodeMetadataFile); err != nil{
+            log.Warn(err)
+        }
 	}
 }
 
@@ -61,9 +67,6 @@ Backing you up since right now...
 }
 
 func main() {
-	if err := os.Chdir(options.Config.Root); err != nil {
-		log.Panic(err)
-	}
 	printLogo()
 	if options.Config.RunNode == true {
 		localNode := node.InitNode(options.Config.NodeConfig)

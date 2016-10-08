@@ -21,6 +21,7 @@ for i in `seq 1 $1`; do
         echo "$DATA_DIR$i"
     fi
     docker run -d \
+        --network autobd \
         -v $DATA_DIR$i:/home/autobd/data \
         -v $ETC_DIR:/home/autobd/etc \
         --name "autobd-node$i" autobd:node

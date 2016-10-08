@@ -23,6 +23,7 @@ PORT=8080
 
 mkdir -p $DATA_DIR
 echo "Running server: $(docker run -d \
+    --network autobd \
     -p $PORT:8080 \
     -v $DATA_DIR:/home/autobd/data \
     -v $SECRET_DIR:/home/autobd/secret \

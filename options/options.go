@@ -18,6 +18,7 @@ type NodeConf struct {
 
 type Conf struct {
 	Root                   string   `toml:"root_dir"`
+	NodeMetadataFile       string   `toml:"node_metadata_file"`
 	ApiPort                string   `toml:"api_port"`
 	RunNode                bool     `toml:"run_as_node"`
 	NodeConfig             NodeConf `toml:"node"`
@@ -39,6 +40,7 @@ func GetOptions() {
 	var configFile string
 
 	flag.StringVar(&configFile, "config", "", "Configuration file")
+	flag.StringVar(&Config.NodeMetadataFile, "node-list-file", "", "Where to store node metadata file")
 	flag.IntVar(&Config.Cores, "cores", 2, "Amount of cores to pass to GOMAXPROC (experimental)")
 	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required). Must be absolute path")
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
@@ -57,7 +59,7 @@ func GetOptions() {
 	flag.StringVar(&Config.NodeConfig.HeartbeatInterval, "heartbeat-interval", "30s", "How often to send a heartbeat to the server")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 	flag.BoolVar(&Config.NodeConfig.IgnoreVersionMismatch, "node-ignore-version-mismatch", false,
-		"Ignore a mismatch in server and client versions")
+	"Ignore a mismatch in server and client versions")
 	flag.StringVar(&Config.NodeConfig.TargetDirectory, "target-directory", "/", "Which directory on the node to sync")
 
 	flag.Parse()

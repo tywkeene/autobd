@@ -7,12 +7,7 @@ USER autobd
 
 WORKDIR /home/autobd
 
-ENV GOPATH=/home/autobd/go
-
-RUN go get github.com/tywkeene/autobd
-
-WORKDIR $GOPATH/src/github.com/tywkeene/autobd/
-RUN bash ./build.sh
+ADD ./autobd ./autobd
 
 RUN mkdir /home/autobd/secret
 VOLUME /home/autobd/secret

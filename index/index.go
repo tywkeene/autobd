@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
+	"github.com/tywkeene/autobd/options"
 	"io"
 	"io/ioutil"
 	"os"
@@ -73,6 +74,9 @@ func GetIndex(dirPath string) (map[string]*Index, error) {
 	}
 	index := make(map[string]*Index)
 	for _, child := range list {
+		if child.Name() == options.Config.NodeMetadataFile {
+			continue
+		}
 		childPath := path.Join(dirPath, child.Name())
 		index[childPath] = NewIndex(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
 		if child.IsDir() == true {

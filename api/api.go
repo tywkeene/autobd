@@ -13,6 +13,7 @@ import (
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/version"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,8 +31,13 @@ type Node struct {
 	Synced     bool   //Is the node synced with this server?
 }
 
-var CurrentNodes map[string]*Node //Currently registered nodes indexed by uuid
-var lock = sync.RWMutex{}         // For synchronized access to CurrentNodes
+type NodeMetadata map[string]*Node
+
+//Currently registered nodes indexed by uuid
+var CurrentNodes NodeMetadata
+
+// For synchronized access to CurrentNodes
+var lock = sync.RWMutex{}
 
 func LogHttp(r *http.Request) {
 	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
@@ -216,6 +222,31 @@ func validateNode(uuid string) bool {
 	return true
 }
 
+func ReadNodeMetadata(path string) error {
+	serial, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(serial, &CurrentNodes); err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteNodeMetadata(path string) error {
+	outfile, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer outfile.Close()
+	serial, err := json.MarshalIndent(&CurrentNodes, " ", " ")
+	if err != nil {
+		return err
+	}
+	_, err = outfile.WriteString(string(serial))
+	return err
+}
+
 //ListNodes() is the http handler for the "/nodes" API endpoint
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
@@ -274,6 +305,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	}
 	addNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
 	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+	WriteNodeMetadata(options.Config.NodeMetadataFile)
 }
 
 //HeartBeat() is the http handler for the "/heartbeat" API endpoint
