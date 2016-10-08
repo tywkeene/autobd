@@ -1,27 +1,16 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
-rm_container(){
-    if docker ps -f name='$1' &> /dev/null; then
-        echo "Removing old container: $(docker rm -f $1)"
-    fi
-}
-
-build_image(){
-    echo "Building $1..."
-    docker rmi -f autobd:server
-    docker build --rm -t autobd:$1 -f docker/Dockerfile.$1 .
-
-}
-
-rm_container "autobd-server"
-build_image "server"
+bash ./scripts/rm_container.sh "autobd-server"
+bash ./scripts/build_image.sh "server"
 
 DATA_DIR="/home/$USER/data/server-data"
 SECRET_DIR="/home/$USER/secret"
 ETC_DIR="/home/$USER/etc/autobd"
 PORT=8080
 
-mkdir -p $DATA_DIR
+if [ ! -d "$DATA_DIR" ]; then
+    mkdir -p "$DATA_DIR" && echo "Created $DATA_DIR"
+fi
 echo "Running server: $(docker run -d \
     --network autobd \
     -p $PORT:8080 \
