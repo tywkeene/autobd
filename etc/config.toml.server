@@ -17,10 +17,15 @@ tls_key= "/home/autobd/secret/key.pem"
 run_as_node = false
 
 #Enable the nodes endpoint (emits json metadata on all nodes)
-node_endpoint = false
+node_endpoint = true
 
 #How often the server will update the status of its nodes
-heartbeat_tracker_interval = "5s"
+heartbeat_tracker_interval = "30s"
 
 #How long a node can go without a heartbeat before it's marked offline
-heartbeat_offline = "10s"
+#i.e if heartbeat_interval in config.toml.node is 15s, setting heatbeat_offline
+#here to 30s would allow for a node to miss 2 heartbeats before being marked offline
+heartbeat_offline = "30s"
+
+#Where to store node metadata file
+node_metadata_file = ".node_metadata"
