@@ -2,6 +2,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
@@ -9,6 +10,8 @@ import (
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/version"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
@@ -27,14 +30,47 @@ func newNode(config options.NodeConf) *Node {
 	for _, url := range config.Servers {
 		servers[url] = client.NewClient(url)
 	}
-	UUID := uuid.NewV4().String()
-	log.Info("Generated node UUID: ", UUID)
-	return &Node{servers, UUID, false, config}
+	return &Node{servers, "", false, config}
 }
 
 func InitNode(config options.NodeConf) *Node {
 	node := newNode(config)
+	//Check to see if we already have a UUID stored in a file, if not, generate one and
+	//write it to node.Config.UUIDPath
+	if _, err := os.Stat(config.UUIDPath); os.IsNotExist(err) {
+		node.UUID = uuid.NewV4().String()
+		node.WriteNodeUUID()
+		log.Infof("Generated and wrote node UUID (%s) to (%s) ", node.UUID, node.Config.UUIDPath)
+	} else {
+		node.ReadNodeUUID()
+		log.Infof("Read node UUID (%s) from (%s) ", node.UUID, node.Config.UUIDPath)
+	}
 	return node
+}
+
+func (node *Node) WriteNodeUUID() error {
+	outfile, err := os.Create(node.Config.UUIDPath)
+	if err != nil {
+		return err
+	}
+	defer outfile.Close()
+	serial, err := json.MarshalIndent(&node.UUID, " ", " ")
+	if err != nil {
+		return err
+	}
+	_, err = outfile.WriteString(string(serial))
+	return err
+}
+
+func (node *Node) ReadNodeUUID() error {
+	if _, err := os.Stat(node.Config.UUIDPath); err != nil {
+		return err
+	}
+	serial, err := ioutil.ReadFile(node.Config.UUIDPath)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(serial, &node.UUID)
 }
 
 func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
