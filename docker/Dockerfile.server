@@ -19,5 +19,5 @@ RUN mkdir /home/autobd/etc
 VOLUME /home/autobd/etc
 
 EXPOSE 8080
-HEALTHCHECK CMD curl -A "Docker-Health-Check" --fail -k "https://0.0.0.0:8080/version" || exit 1
+HEALTHCHECK CMD curl -A "Docker-Health-Check" --fail -k "0.0.0.0:8080/version" || exit 1
 ENTRYPOINT ./autobd -config /home/autobd/etc/config.toml.server
