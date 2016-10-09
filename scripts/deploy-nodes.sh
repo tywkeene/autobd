@@ -1,24 +1,18 @@
 #!/bin/bash
 
-build_image(){
-    echo "Building $1..."
-    docker build --rm -t autobd:$1 -f docker/Dockerfile.node .
-}
-
 if [ -z "$1" ]; then
     printf "Usage $0 <number of nodes to create>\n"
     exit -1
 fi
 
-build_image "node"
+bash ./scripts/build_image.sh "node"
 
 ETC_DIR="/home/$USER/etc/autobd"
 DATA_DIR="/home/$USER/data/autobd-nodes/node"
 
 for i in `seq 1 $1`; do
     if [ ! -d "$DATA_DIR$1" ]; then
-        mkdir "$DATA_DIR$i"
-        echo "$DATA_DIR$i"
+        mkdir -p "$DATA_DIR$i" && echo "Created $DATA_DIR$i"
     fi
     docker run -d \
         --network autobd \

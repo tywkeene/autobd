@@ -7,19 +7,22 @@ run_as_node = true
 [node]
 #What server to communicate with IP/URL
 #(required when running as a node)
-servers = ["https://172.18.0.2:8080"]
+servers = ["http://172.18.0.2:8080"]
 
 #Don't fail if the node's version doesn't match the server's
 node_ignore_version_mismatch = false
 
-#How often to update with the other servers
+#How often to update with the servers
 update_interval = "30s"
 
-#How often to request the /heartbeat api endpoint
-heartbeat_interval = "10s"
+#How often to request the node's status on the servers
+heartbeat_interval = "15s"
 
 #How many heartbeats the server is allowed to miss before it's ignored
-max_missed_beats = 5
+max_missed_beats = 3
 
 #Which directory on the node to sync
 target_directory = "/"
+
+#Where to store the node uuid file
+uuid_path = ".uuid"
