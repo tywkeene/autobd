@@ -131,7 +131,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.GetAPIVersion(), version.GetNodeVersion(), version.GetCommit()}, "  ", "  ")
+	serialVer := version.JSON()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
