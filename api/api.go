@@ -184,7 +184,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 }
 
 //Add a node to the CurrentNodes map synchronously
-func getNodeByUUID(uuid string) *Node {
+func GetNodeByUUID(uuid string) *Node {
 	lock.RLock()
 	defer lock.RUnlock()
 	if CurrentNodes == nil {
@@ -194,7 +194,7 @@ func getNodeByUUID(uuid string) *Node {
 }
 
 //Get a node from the CurrentNodes map synchronously
-func addNode(uuid string, node *Node) {
+func AddNode(uuid string, node *Node) {
 	lock.RLock()
 	defer lock.RUnlock()
 
@@ -206,7 +206,7 @@ func addNode(uuid string, node *Node) {
 
 //Update the online status and timestamp of a node by uuid
 func updateNodeStatus(uuid string, online bool, synced bool) {
-	node := getNodeByUUID(uuid)
+	node := GetNodeByUUID(uuid)
 	if online == true {
 		node.LastOnline = time.Now().Format(time.RFC850)
 	}
@@ -216,7 +216,7 @@ func updateNodeStatus(uuid string, online bool, synced bool) {
 
 //Validate a node uuid
 func validateNode(uuid string) bool {
-	if node := getNodeByUUID(uuid); node == nil {
+	if node := GetNodeByUUID(uuid); node == nil {
 		return false
 	}
 	return true
@@ -303,7 +303,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 		CurrentNodes = make(map[string]*Node)
 		go StartHeartBeatTracker()
 	}
-	addNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
+	AddNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
 	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
 	WriteNodeMetadata(options.Config.NodeMetadataFile)
 }
