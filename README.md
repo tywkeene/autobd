@@ -3,7 +3,8 @@
 [![Stories in Ready](https://badge.waffle.io/tywkeene/autobd.svg?label=ready&title=Ready)](http://waffle.io/tywkeene/autobd)
 [![Build Status](https://travis-ci.org/tywkeene/autobd.svg)](https://travis-ci.org/tywkeene/autobd)
 [![GoDoc](https://godoc.org/github.com/tywkeene/autobd?status.svg)](https://godoc.org/github.com/tywkeene/autobd)
-![Join the chat at https://gitter.im/autobd/Lobby](https://badges.gitter.im/autobd/Lobby.svg)
+[![Gitter](https://badges.gitter.im/autobd/Lobby.svg)](https://gitter.im/autobd/Lobby)
+
 
 ## Getting autobd
 Golang is required, so [get that](https://golang.org/doc/install). Most versions should work but it's probably best to
