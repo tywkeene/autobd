@@ -8,8 +8,8 @@ import (
 	"crypto/tls"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/packing"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -85,17 +85,6 @@ func (client *Client) Get(endpoint string, queryValues map[string]string, userAg
 	return InflateResponse(response)
 }
 
-func writeFile(filename string, source io.Reader) error {
-	writer, err := os.Create(filename)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	defer writer.Close()
-	io.Copy(writer, source)
-	return nil
-}
-
 func (client *Client) RequestVersion() ([]byte, error) {
 	resp, err := http.Get(client.Address + "/version")
 	if err != nil {
@@ -133,7 +122,7 @@ func (client *Client) RequestSyncDir(dir string, uuid string, userAgent string) 
 			return err
 		}
 	}
-	return writeFile(dir, reader)
+	return utils.WriteFile(dir, reader)
 }
 
 func (client *Client) RequestSyncFile(file string, uuid string, userAgent string) error {
@@ -145,8 +134,7 @@ func (client *Client) RequestSyncFile(file string, uuid string, userAgent string
 		return err
 	}
 	reader := bytes.NewReader(buffer)
-	err = writeFile(file, reader)
-	return err
+	return utils.WriteFile(file, reader)
 }
 
 //Identify with a server and tell it the node's version and uuid

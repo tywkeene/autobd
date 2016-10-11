@@ -11,7 +11,9 @@ import (
 	"github.com/tywkeene/autobd/client"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
+	"os"
 	"strings"
 	"time"
 )
@@ -31,19 +33,33 @@ type Cli struct {
 	UUID          string           //Cli UUID
 }
 
-var cliUserAgent string = "Autobd-cli/" + version.GetCliVersion()
+func cliUserAgent() string { return "Autobd-cli/" + version.GetCliVersion() }
 
 func newCli(configFile string) *Cli {
 	var config CliConfig
-	UUID := uuid.NewV4().String()
-	fmt.Println("cli-UUID: ", UUID)
 	if configFile != "" {
 		if _, err := toml.DecodeFile(configFile, &config); err != nil {
-			fmt.Printf("Error reading config %s: %s\n", configFile, err.Error())
+			fmt.Printf("Error reading config (%s): %s\n", configFile, err.Error())
 			return nil
 		}
 	}
-	return &Cli{make([]*client.Client, 0), nil, config, UUID}
+
+	cli := &Cli{make([]*client.Client, 0), nil, config, ""}
+	if _, err := os.Stat(cli.Config.UUIDPath); os.IsNotExist(err) {
+		cli.UUID = uuid.NewV4().String()
+		if err := utils.WriteJson(cli.Config.UUIDPath, cli.UUID); err != nil {
+			fmt.Println(err)
+			return cli
+		}
+		fmt.Printf("Generated and wrote cli-UUID (%s) to (%s)\n", cli.UUID, cli.Config.UUIDPath)
+	} else {
+		if err := utils.ReadJson(cli.Config.UUIDPath, &cli.UUID); err != nil {
+			fmt.Println(err)
+			return cli
+		}
+		fmt.Printf("Read cli-UUID (%s) from (%s)\n", cli.UUID, cli.Config.UUIDPath)
+	}
+	return cli
 }
 
 func (c *Cli) appendServer(server *client.Client) {
@@ -55,7 +71,7 @@ func (c *Cli) appendServer(server *client.Client) {
 
 func (c *Cli) addServer(address string) error {
 	server := client.NewClient(address)
-	_, err := server.IdentifyWithServer(c.UUID, cliUserAgent)
+	_, err := server.IdentifyWithServer(c.UUID, cliUserAgent())
 	if err != nil {
 		return err
 	}
@@ -80,7 +96,7 @@ func (c *Cli) StartHeartbeat() {
 			time.Sleep(interval)
 
 			for _, server := range c.Servers {
-				_, err := server.SendHeartbeat(c.UUID, true, cliUserAgent)
+				_, err := server.SendHeartbeat(c.UUID, false, cliUserAgent())
 				if err != nil {
 					server.MissedBeats++
 					if server.MissedBeats == c.Config.MaxMissedBeats {
@@ -132,8 +148,8 @@ func (c *Cli) prettyPrintNodes(nodes map[string]*api.Node) {
 }
 
 func (c *Cli) printConfig() {
-	fmt.Printf("heartbeat_interval = %s\nmax_missed_beats = %d\noutput_json = %v\n",
-		c.Config.HeartbeatInterval, c.Config.MaxMissedBeats, c.Config.OutputJSON)
+	fmt.Printf("heartbeat_interval = '%s'\nmax_missed_beats = %d\noutput_json = %v\nsync_dir = '%s'\nuuid_path = '%s'\n",
+		c.Config.HeartbeatInterval, c.Config.MaxMissedBeats, c.Config.OutputJSON, c.Config.SyncDirPath, c.Config.UUIDPath)
 }
 
 func Start() {
@@ -185,7 +201,7 @@ func Start() {
 		if len(c.Servers) == 0 {
 			return "", errors.New("No servers")
 		}
-		serial, err := c.CurrentServer.GetNodes(c.UUID, cliUserAgent)
+		serial, err := c.CurrentServer.GetNodes(c.UUID, cliUserAgent())
 		if err != nil {
 			return "", err
 		}
@@ -228,7 +244,7 @@ func Start() {
 		if dir == "" {
 			return "", errors.New("Must specify directory")
 		}
-		serial, err := c.CurrentServer.RequestIndex(dir, c.UUID, cliUserAgent)
+		serial, err := c.CurrentServer.RequestIndex(dir, c.UUID, cliUserAgent())
 		if err != nil {
 			return "", err
 		}

@@ -9,3 +9,6 @@ output_json = true
 
 #Where to store synced files and directories
 sync_dir = "~/tmp"
+
+#Where to store the cli UUID file for use in future cli sessions
+uuid_path = "/home/null/etc/autobd/cli-uuid.json"
