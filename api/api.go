@@ -299,12 +299,24 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	version := GetQueryValue("version", w, r)
 	lock.RLock()
 	defer lock.RUnlock()
+	//Initialize the node list and start the heartbeat tracker
 	if CurrentNodes == nil {
 		CurrentNodes = make(map[string]*Node)
 		go StartHeartBeatTracker()
 	}
-	AddNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
-	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+
+	//Check to see if this node is already online
+	if validateNode(uuid) == true {
+		node := GetNodeByUUID(uuid)
+		if node.IsOnline == false {
+			node.IsOnline = true
+		}
+		log.Printf("Node (%s) came back online", uuid)
+	} else {
+		//Otherwise it's new, so add it to the list
+		AddNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
+		log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+	}
 	WriteNodeMetadata(options.Config.NodeMetadataFile)
 }
 
