@@ -164,6 +164,9 @@ func Start() {
 	})
 
 	shell.Register("server", func(args ...string) (string, error) {
+		if len(args) == 0 {
+			return "", errors.New("Server address required")
+		}
 		address := args[0]
 		if strings.Contains(address, "http://") == false &&
 			strings.Contains(address, "https://") == false {
