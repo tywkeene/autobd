@@ -24,6 +24,7 @@ type CliConfig struct {
 	OutputJSON        bool   `toml:"output_json"`        //Output json instead of pretty printing
 	SyncDirPath       string `toml:"sync_dir"`           //Where to save synced files/directories
 	UUIDPath          string `toml:"uuid_path"`          //Where to read/write cli UUID
+	DefaultServer     string `toml:"default_server"`     //Default server to add on cli startup
 }
 
 type Cli struct {
@@ -148,8 +149,8 @@ func (c *Cli) prettyPrintNodes(nodes map[string]*api.Node) {
 }
 
 func (c *Cli) printConfig() {
-	fmt.Printf("heartbeat_interval = '%s'\nmax_missed_beats = %d\noutput_json = %v\nsync_dir = '%s'\nuuid_path = '%s'\n",
-		c.Config.HeartbeatInterval, c.Config.MaxMissedBeats, c.Config.OutputJSON, c.Config.SyncDirPath, c.Config.UUIDPath)
+	fmt.Printf("heartbeat_interval = '%s'\nmax_missed_beats = %d\noutput_json = %v\nsync_dir = '%s'\nuuid_path = '%s'\ndefault_server: '%s'\n",
+		c.Config.HeartbeatInterval, c.Config.MaxMissedBeats, c.Config.OutputJSON, c.Config.SyncDirPath, c.Config.UUIDPath, c.Config.DefaultServer)
 }
 
 func Start() {
@@ -157,6 +158,11 @@ func Start() {
 
 	c := newCli(options.Config.CliConfigPath)
 	c.printConfig()
+
+	if c.Config.DefaultServer != "" {
+		fmt.Printf("Using default server %s\n", c.Config.DefaultServer)
+		c.addServer(c.Config.DefaultServer)
+	}
 
 	shell.Register("print-config", func(args ...string) (string, error) {
 		c.printConfig()
