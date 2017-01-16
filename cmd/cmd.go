@@ -219,22 +219,6 @@ func Start() {
 		c.prettyPrintNodes(nodes)
 		return "OK", nil
 	})
-	shell.Register("sync-file", func(args ...string) (string, error) {
-		if len(args) == 0 {
-			return "", errors.New("Must specify file to sync")
-		}
-		fmt.Println("(Not yet implemented)")
-		return "OK", nil
-	})
-
-	shell.Register("sync-dir", func(args ...string) (string, error) {
-		if len(args) == 0 {
-			return "", errors.New("Must specify dir to sync")
-		}
-		fmt.Println("(Not yet implemented)")
-		return "OK", nil
-	})
-
 	shell.Register("get-index", func(args ...string) (string, error) {
 		if len(args) == 0 {
 			return "", errors.New("Must specify directory to index")
