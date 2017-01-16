@@ -2,6 +2,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
@@ -9,6 +10,8 @@ import (
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/version"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
@@ -21,20 +24,54 @@ type Node struct {
 }
 
 var localNode *Node
+var nodeUseragent string = "Autobd-node/" + version.GetNodeVersion()
 
 func newNode(config options.NodeConf) *Node {
 	servers := make(map[string]*client.Client, 0)
 	for _, url := range config.Servers {
 		servers[url] = client.NewClient(url)
 	}
-	UUID := uuid.NewV4().String()
-	log.Info("Generated node UUID: ", UUID)
-	return &Node{servers, UUID, false, config}
+	return &Node{servers, "", false, config}
 }
 
 func InitNode(config options.NodeConf) *Node {
 	node := newNode(config)
+	//Check to see if we already have a UUID stored in a file, if not, generate one and
+	//write it to node.Config.UUIDPath
+	if _, err := os.Stat(config.UUIDPath); os.IsNotExist(err) {
+		node.UUID = uuid.NewV4().String()
+		node.WriteNodeUUID()
+		log.Infof("Generated and wrote node UUID (%s) to (%s) ", node.UUID, node.Config.UUIDPath)
+	} else {
+		node.ReadNodeUUID()
+		log.Infof("Read node UUID (%s) from (%s) ", node.UUID, node.Config.UUIDPath)
+	}
 	return node
+}
+
+func (node *Node) WriteNodeUUID() error {
+	outfile, err := os.Create(node.Config.UUIDPath)
+	if err != nil {
+		return err
+	}
+	defer outfile.Close()
+	serial, err := json.MarshalIndent(&node.UUID, " ", " ")
+	if err != nil {
+		return err
+	}
+	_, err = outfile.WriteString(string(serial))
+	return err
+}
+
+func (node *Node) ReadNodeUUID() error {
+	if _, err := os.Stat(node.Config.UUIDPath); err != nil {
+		return err
+	}
+	serial, err := ioutil.ReadFile(node.Config.UUIDPath)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(serial, &node.UUID)
 }
 
 func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
@@ -60,7 +97,7 @@ func (node *Node) StartHeart() {
 				if server.Online == false {
 					continue
 				}
-				_, err := server.SendHeartbeat(node.UUID, node.Synced)
+				_, err := server.SendHeartbeat(node.UUID, node.Synced, nodeUseragent)
 				if err != nil {
 					log.Error(err)
 					server.MissedBeats++
@@ -86,17 +123,22 @@ func (node *Node) CountOnlineServers() int {
 
 func (node *Node) ValidateAndIdentifyWithServers() error {
 	for _, server := range node.Servers {
-		remoteVer, err := server.RequestVersion()
-		if remoteVer == nil || err != nil {
+		serial, err := server.RequestVersion()
+		if err != nil {
 			return err
 		}
+		var remoteVer *version.VersionInfo
+		if err := json.Unmarshal(serial, &remoteVer); err != nil {
+			return err
+		}
+
 		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
 			if err := node.validateServerVersion(remoteVer); err != nil {
 				log.Error(err)
 				return err
 			}
 		}
-		_, err = server.IdentifyWithServer(node.UUID)
+		_, err = server.IdentifyWithServer(node.UUID, nodeUseragent)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -106,17 +148,71 @@ func (node *Node) ValidateAndIdentifyWithServers() error {
 	return nil
 }
 
+func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
+	need := make([]*index.Index, 0)
+	for objName, object := range remote {
+		_, existsLocally := local[object.Name] //Does it exist on the node?
+
+		//If it doesn't exist on the node at all, we obviously need it
+		if existsLocally == false {
+			need = append(need, remote[objName])
+			continue
+		}
+
+		// If it does, and it's a directory, and it has children
+		if existsLocally == true && object.IsDir == true && object.Files != nil {
+			dirNeed := CompareDirs(local[objName].Files, object.Files) //Scan the children
+			need = append(need, dirNeed...)
+			continue
+		}
+
+		//If it isn't a directory and doesn't exist
+		if existsLocally == false && object.IsDir == false {
+			need = append(need, remote[objName])
+			continue
+		}
+
+		//If it is a file and does exist, compare checksums
+		if existsLocally == true && object.IsDir == false {
+			if local[objName].Checksum != remote[objName].Checksum {
+				log.Info("Checksum mismatch:", objName)
+				need = append(need, remote[objName])
+				continue
+			}
+		}
+	}
+	return need
+}
+
+//Compare a local and remote index, return a slice of needed indexes (or nil)
+func (node *Node) CompareIndex(target string, uuid string, userAgent string, client *client.Client) ([]*index.Index, error) {
+	serial, err := client.RequestIndex(target, uuid, userAgent)
+	if err != nil {
+		return nil, err
+	}
+	var remoteIndex map[string]*index.Index
+	if err := json.Unmarshal(serial, &remoteIndex); err != nil {
+		return nil, err
+	}
+	localIndex, err := index.GetIndex("/")
+	if err != nil {
+		return nil, err
+	}
+	need := CompareDirs(localIndex, remoteIndex)
+	return need, nil
+}
+
 func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 	for _, object := range need {
 		log.Printf("Need %s from %s\n", object.Name, s.Address)
 		if object.IsDir == true {
-			err := s.RequestSyncDir(object.Name, node.UUID)
+			err := s.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
 			if err != nil {
 				log.Error(err)
 				continue
 			}
 		} else if object.IsDir == false {
-			err := s.RequestSyncFile(object.Name, node.UUID)
+			err := s.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
 			if err != nil {
 				log.Error(err)
 				continue
@@ -141,12 +237,12 @@ func (node *Node) UpdateLoop() error {
 		if node.CountOnlineServers() == 0 {
 			log.Panic("No servers online, dying")
 		}
-		for _, s := range node.Servers {
-			if s.Online == false {
-				log.Info("Skipping offline server: ", s.Address)
+		for _, server := range node.Servers {
+			if server.Online == false {
+				log.Info("Skipping offline server: ", server.Address)
 				continue
 			}
-			need, err := s.CompareIndex(node.Config.TargetDirectory, node.UUID)
+			need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
 			if err != nil {
 				log.Error(err)
 				continue
@@ -156,7 +252,7 @@ func (node *Node) UpdateLoop() error {
 				node.Synced = true
 				continue
 			}
-			node.SyncUp(need, s)
+			node.SyncUp(need, server)
 		}
 	}
 	return nil

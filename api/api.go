@@ -131,7 +131,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	LogHttp(r)
-	serialVer, _ := json.MarshalIndent(&version.VersionInfo{version.GetAPIVersion(), version.GetNodeVersion(), version.GetCommit()}, "  ", "  ")
+	serialVer := version.JSON()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
@@ -184,7 +184,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 }
 
 //Add a node to the CurrentNodes map synchronously
-func getNodeByUUID(uuid string) *Node {
+func GetNodeByUUID(uuid string) *Node {
 	lock.RLock()
 	defer lock.RUnlock()
 	if CurrentNodes == nil {
@@ -194,7 +194,7 @@ func getNodeByUUID(uuid string) *Node {
 }
 
 //Get a node from the CurrentNodes map synchronously
-func addNode(uuid string, node *Node) {
+func AddNode(uuid string, node *Node) {
 	lock.RLock()
 	defer lock.RUnlock()
 
@@ -206,7 +206,7 @@ func addNode(uuid string, node *Node) {
 
 //Update the online status and timestamp of a node by uuid
 func updateNodeStatus(uuid string, online bool, synced bool) {
-	node := getNodeByUUID(uuid)
+	node := GetNodeByUUID(uuid)
 	if online == true {
 		node.LastOnline = time.Now().Format(time.RFC850)
 	}
@@ -216,7 +216,7 @@ func updateNodeStatus(uuid string, online bool, synced bool) {
 
 //Validate a node uuid
 func validateNode(uuid string) bool {
-	if node := getNodeByUUID(uuid); node == nil {
+	if node := GetNodeByUUID(uuid); node == nil {
 		return false
 	}
 	return true
@@ -299,12 +299,24 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	version := GetQueryValue("version", w, r)
 	lock.RLock()
 	defer lock.RUnlock()
+	//Initialize the node list and start the heartbeat tracker
 	if CurrentNodes == nil {
 		CurrentNodes = make(map[string]*Node)
 		go StartHeartBeatTracker()
 	}
-	addNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
-	log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+
+	//Check to see if this node is already online
+	if validateNode(uuid) == true {
+		node := GetNodeByUUID(uuid)
+		if node.IsOnline == false {
+			node.IsOnline = true
+		}
+		log.Printf("Node (%s) came back online", uuid)
+	} else {
+		//Otherwise it's new, so add it to the list
+		AddNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
+		log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+	}
 	WriteNodeMetadata(options.Config.NodeMetadataFile)
 }
 

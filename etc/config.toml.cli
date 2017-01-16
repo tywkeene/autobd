@@ -1,0 +1,14 @@
+#How often to send the servers a heartbeat
+heartbeat_interval = "5s"
+
+#How many heartbeats a server can miss before it's marked as offline
+max_missed_beats = 5
+
+#Output server data in JSON instead of pretty printing
+output_json = true
+
+#Where to store synced files and directories
+sync_dir = "~/tmp"
+
+#Where to store the cli UUID file for use in future cli sessions
+uuid_path = "/home/null/etc/autobd/cli-uuid.json"

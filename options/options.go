@@ -14,6 +14,7 @@ type NodeConf struct {
 	MaxMissedBeats        int      `toml:"max_missed_beats"`
 	IgnoreVersionMismatch bool     `toml:"node_ignore_version_mismatch"`
 	TargetDirectory       string   `toml:"target_directory"`
+	UUIDPath              string   `toml:"uuid_path"`
 }
 
 type Conf struct {
@@ -32,6 +33,8 @@ type Conf struct {
 	HeartBeatOffline       string   `toml:"heartbeat_offline"`
 	Version                bool
 	VersionJSON            bool
+	RunCLI                 bool
+	CliConfigPath          string `toml:"cli_config_path"`
 }
 
 var Config Conf
@@ -39,28 +42,35 @@ var Config Conf
 func GetOptions() {
 	var configFile string
 
+	//Misc command line flags
 	flag.StringVar(&configFile, "config", "", "Configuration file")
-	flag.StringVar(&Config.NodeMetadataFile, "node-list-file", "", "Where to store node metadata file")
 	flag.IntVar(&Config.Cores, "cores", 2, "Amount of cores to pass to GOMAXPROC (experimental)")
+	flag.BoolVar(&Config.Version, "version", false, "Print version information and exit")
+	flag.BoolVar(&Config.VersionJSON, "json-version", false, "Print version information as a JSON encoded struct and exit")
+	flag.BoolVar(&Config.RunCLI, "cli", false, "Run the autobd cli")
+	flag.StringVar(&Config.CliConfigPath, "cli-config", "etc/config.toml.cli", "Path to the command line configuration file")
+
+	//Server command line flags
+	flag.StringVar(&Config.NodeMetadataFile, "node-list-file", "", "Where to store node metadata file")
 	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required). Must be absolute path")
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
-	flag.StringVar(&Config.Server, "server", "", "Server to query")
-	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
 	flag.StringVar(&Config.Cert, "tls-cert", "", "Path to TLS certificate to use")
 	flag.StringVar(&Config.Key, "tls-key", "", "Path to TLS key to use")
 	flag.BoolVar(&Config.Ssl, "ssl", true, "Use TLS/SSL")
 	flag.BoolVar(&Config.NodeEndpoint, "node-endpoint", false, "Enable or disable the /nodes endpoint that may reveal sensitive information")
 	flag.StringVar(&Config.HeartBeatTrackInterval, "heartbeat-track-interval", "30s", "How often update registered nodes status")
 	flag.StringVar(&Config.HeartBeatOffline, "heartbeat-offline", "5m", "How long a node can go without a heartbeat before it's marked offline")
-	flag.BoolVar(&Config.Version, "version", false, "Print version information and exit")
-	flag.BoolVar(&Config.VersionJSON, "json-version", false, "Print version information as a JSON encoded struct and exit")
 
+	//Node command line flags
+	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")
+	flag.StringVar(&Config.Server, "server", "", "Server to query")
 	flag.IntVar(&Config.NodeConfig.MaxMissedBeats, "missed-beats", 4, "How many heartbeats the server can miss before the node goes offline")
 	flag.StringVar(&Config.NodeConfig.HeartbeatInterval, "heartbeat-interval", "30s", "How often to send a heartbeat to the server")
 	flag.StringVar(&Config.NodeConfig.UpdateInterval, "update-interval", "1m", "How often to update with the other servers")
 	flag.BoolVar(&Config.NodeConfig.IgnoreVersionMismatch, "node-ignore-version-mismatch", false,
-	"Ignore a mismatch in server and client versions")
+		"Ignore a mismatch in server and client versions")
 	flag.StringVar(&Config.NodeConfig.TargetDirectory, "target-directory", "/", "Which directory on the node to sync")
+	flag.StringVar(&Config.NodeConfig.UUIDPath, "uuid-path", ".uuid", "Where to store the node UUID")
 
 	flag.Parse()
 

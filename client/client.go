@@ -6,12 +6,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
-	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/packing"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -76,10 +74,10 @@ func InflateResponse(resp *http.Response) ([]byte, error) {
 
 //HTTP GET with autobd specific headers set, returns a gzip reader if the response is
 //gzipped, a normal response body otherwise
-func (client *Client) Get(endpoint string, queryValues map[string]string) ([]byte, error) {
+func (client *Client) Get(endpoint string, queryValues map[string]string, userAgent string) ([]byte, error) {
 	request := client.ConstructRequest(endpoint, queryValues)
 	request.Header.Set("Accept-Encoding", "application/x-gzip")
-	request.Header.Set("User-Agent", "Autobd-node/"+version.GetAPIVersion())
+	request.Header.Set("User-Agent", userAgent)
 	response, err := client.http.Do(request)
 	if err != nil {
 		return nil, err
@@ -87,54 +85,27 @@ func (client *Client) Get(endpoint string, queryValues map[string]string) ([]byt
 	return InflateResponse(response)
 }
 
-func writeFile(filename string, source io.Reader) error {
-	writer, err := os.Create(filename)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	defer writer.Close()
-	io.Copy(writer, source)
-	return nil
-}
-
-func (client *Client) RequestVersion() (*version.VersionInfo, error) {
+func (client *Client) RequestVersion() ([]byte, error) {
 	resp, err := http.Get(client.Address + "/version")
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	var ver *version.VersionInfo
-	buffer, _ := ioutil.ReadAll(resp.Body)
-	if err := json.Unmarshal(buffer, &ver); err != nil {
-		return nil, err
-	}
-	return ver, nil
+	return ioutil.ReadAll(resp.Body)
 }
 
-func (client *Client) RequestIndex(dir string, uuid string) (map[string]*index.Index, error) {
+func (client *Client) RequestIndex(dir string, uuid string, userAgent string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["dir"] = dir
 	queryValues["uuid"] = uuid
-
-	buffer, err := client.Get("/index", queryValues)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteIndex := make(map[string]*index.Index)
-	if err := json.Unmarshal(buffer, &remoteIndex); err != nil {
-		return nil, err
-	}
-	return remoteIndex, nil
+	return client.Get("/index", queryValues, userAgent)
 }
 
-func (client *Client) RequestSyncDir(dir string, uuid string) error {
+func (client *Client) RequestSyncDir(dir string, uuid string, userAgent string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = dir
 	queryValues["uuid"] = uuid
-	buffer, err := client.Get("/sync", queryValues)
+	buffer, err := client.Get("/sync", queryValues, userAgent)
 	if err != nil {
 		return err
 	}
@@ -151,84 +122,39 @@ func (client *Client) RequestSyncDir(dir string, uuid string) error {
 			return err
 		}
 	}
-	return writeFile(dir, reader)
+	return utils.WriteFile(dir, reader)
 }
 
-func (client *Client) RequestSyncFile(file string, uuid string) error {
+func (client *Client) RequestSyncFile(file string, uuid string, userAgent string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = file
 	queryValues["uuid"] = uuid
-	buffer, err := client.Get("/sync", queryValues)
+	buffer, err := client.Get("/sync", queryValues, userAgent)
 	if err != nil {
 		return err
 	}
 	reader := bytes.NewReader(buffer)
-	err = writeFile(file, reader)
-	return err
-}
-
-func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
-	need := make([]*index.Index, 0)
-	for objName, object := range remote {
-		_, existsLocally := local[object.Name] //Does it exist on the node?
-
-		//If it doesn't exist on the node at all, we obviously need it
-		if existsLocally == false {
-			need = append(need, remote[objName])
-			continue
-		}
-
-		// If it does, and it's a directory, and it has children
-		if existsLocally == true && object.IsDir == true && object.Files != nil {
-			dirNeed := CompareDirs(local[objName].Files, object.Files) //Scan the children
-			need = append(need, dirNeed...)
-			continue
-		}
-
-		//If it isn't a directory and doesn't exist
-		if existsLocally == false && object.IsDir == false {
-			need = append(need, remote[objName])
-			continue
-		}
-
-		//If it is a file and does exist, compare checksums
-		if existsLocally == true && object.IsDir == false {
-			if local[objName].Checksum != remote[objName].Checksum {
-				log.Info("Checksum mismatch:", objName)
-				need = append(need, remote[objName])
-				continue
-			}
-		}
-	}
-	return need
-}
-
-//Compare a local and remote index, return a slice of needed indexes (or nil)
-func (client *Client) CompareIndex(target string, uuid string) ([]*index.Index, error) {
-	remoteIndex, err := client.RequestIndex(target, uuid)
-	if err != nil {
-		return nil, err
-	}
-	localIndex, err := index.GetIndex("/")
-	if err != nil {
-		return nil, err
-	}
-	need := CompareDirs(localIndex, remoteIndex)
-	return need, nil
+	return utils.WriteFile(file, reader)
 }
 
 //Identify with a server and tell it the node's version and uuid
-func (client *Client) IdentifyWithServer(uuid string) ([]byte, error) {
+func (client *Client) IdentifyWithServer(uuid string, userAgent string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid
 	queryValues["version"] = version.GetNodeVersion()
-	return client.Get("/identify", queryValues)
+	return client.Get("/identify", queryValues, userAgent)
 }
 
 //Send a heartbeat to a server, updating the node's synced status
-func (client *Client) SendHeartbeat(uuid string, synced bool) ([]byte, error) {
+func (client *Client) SendHeartbeat(uuid string, synced bool, userAgent string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid
 	queryValues["synced"] = strconv.FormatBool(synced)
-	return client.Get("/heartbeat", queryValues)
+	return client.Get("/heartbeat", queryValues, userAgent)
+}
+
+func (client *Client) GetNodes(uuid string, userAgent string) ([]byte, error) {
+	queryValues := make(map[string]string)
+	queryValues["uuid"] = uuid
+	return client.Get("/nodes", queryValues, userAgent)
 }
