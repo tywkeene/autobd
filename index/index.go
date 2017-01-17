@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
-	"github.com/tywkeene/autobd/options"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"time"
+
+	"github.com/tywkeene/autobd/options"
 )
 
 type Index struct {
@@ -22,31 +22,24 @@ type Index struct {
 	Files    map[string]*Index `json:"files,omitempty"`
 }
 
-//Generate a sha512 checksum for 'path'
+// GetChecksum returns the SHA512 hash of the file at 'path'.
 func GetChecksum(path string) (string, error) {
 	file, err := os.Open(path)
-
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	stats, err := file.Stat()
+	hash := sha512.New()
+	buf := bufio.NewReader(file)
+
+	_, err = buf.WriteTo(hash)
 	if err != nil {
 		return "", err
 	}
 
-	size := stats.Size()
-	raw := make([]byte, size)
-
-	buffer := bufio.NewReader(file)
-	_, err = buffer.Read(raw)
-
-	hash := sha512.New()
-	io.WriteString(hash, string(raw))
-	checksum := hex.EncodeToString(hash.Sum(nil))
-
-	return checksum, nil
+	sum := hex.EncodeToString(hash.Sum(nil))
+	return sum, nil
 }
 
 func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Index {
