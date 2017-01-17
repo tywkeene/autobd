@@ -208,13 +208,22 @@ func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 		if object.IsDir == true {
 			err := s.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
 			if err != nil {
-				log.Error(err)
+				if err.Error() == "EOF" {
+					log.Info("OK")
+				} else {
+					log.Error(err)
+				}
 				continue
 			}
 		} else if object.IsDir == false {
 			err := s.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
 			if err != nil {
-				log.Error(err)
+				//EOF just means the sync is finished, don't log an error
+				if err.Error() == "EOF" {
+					log.Info("OK")
+				} else {
+					log.Error(err)
+				}
 				continue
 			}
 		}
