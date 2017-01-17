@@ -32,7 +32,10 @@ The nodes will do this again and again in an interval, that you can define in et
 send the server a 'heartbeat' in an interval. This lets the server know of the status of each node, if it's synced, and if it's
 still online. So you need only access the server, to get information on the entire 'horde' of 'demons' :)
 
-That's autobd in a nutshell. You can find a more in depth tutorial in TUTORIAL.md
+That's autobd in a nutshell.
+
+See the [tutorial](https://github.com/tywkeene/autobd/blob/master/TUTORIAL.md) for a more in-depth guide.
+
 
 ## Getting autobd
 Golang is required, so [get that](https://golang.org/doc/install). Most versions should work but it's probably best to
