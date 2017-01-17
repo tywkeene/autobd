@@ -5,6 +5,34 @@
 [![GoDoc](https://godoc.org/github.com/tywkeene/autobd?status.svg)](https://godoc.org/github.com/tywkeene/autobd)
 [![Gitter](https://badges.gitter.im/autobd/Lobby.svg)](https://gitter.im/autobd/Lobby)
 
+## What is it?
+
+Autobd is an automatic backup daemon. What is that? A daemon (derived from the evil word 'demon') is a process or program that
+runs (mostly) silently in the background, and handles certain tasks. This 'Demons' task is to back up a directory tree.
+
+Say you have three servers. A, B and C. You have files on server A that you want on servers B and C. You don't really want to
+some convoluted and hacky script, you need something that is just going to work in the background, require almost no configuration
+or installation of any additional software, and is super easy to get running via docker.
+
+### Enter Autobd.
+
+All you need to do on server A is set the directory you want to watch via the ```DATA_DIR``` variable in the ```scripts/deploy-server.sh``` script, then you can 
+start the daemon via the same script. This will start a single autobd server instance, running inside of docker. You can ```curl
+http://0.0.0.0:8080/version```, and you will get version information from the server.
+
+Now you just need to get your nodes going. This is just like the server, except you're using another script, pre-written. All
+you need to do is let the node know which directory you want it to put synced files into, via the ```DATA_DIR``` variable in
+the ```scripts/deploy-nodes.sh``` script and run the script. You're good to go.
+
+Once the nodes and server are running, the nodes will identify with the server, and request an initial file index from there server.
+The first sync of course will be quite large, since the node is getting everything, but subsequent syncs will usually be much 
+smaller, unless you dump a lot of files onto the server at once.
+
+The nodes will do this again and again in an interval, that you can define in etc/config.toml.node. Additionally, each node will
+send the server a 'heartbeat' in an interval. This lets the server know of the status of each node, if it's synced, and if it's
+still online. So you need only access the server, to get information on the entire 'horde' of 'demons' :)
+
+That's autobd in a nutshell. You can find a more in depth tutorial in TUTORIAL.md
 
 ## Getting autobd
 Golang is required, so [get that](https://golang.org/doc/install). Most versions should work but it's probably best to
