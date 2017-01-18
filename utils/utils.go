@@ -2,9 +2,12 @@ package utils
 
 import (
 	"encoding/json"
+	log "github.com/Sirupsen/logrus"
+	"github.com/tywkeene/autobd/options"
 	"io"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 func WriteJson(path string, data interface{}) error {
@@ -43,4 +46,12 @@ func WriteFile(filename string, source io.Reader) error {
 	defer writer.Close()
 	io.Copy(writer, source)
 	return nil
+}
+
+// This is neat: https://coderwall.com/p/cp5fya/measuring-execution-time-in-go
+func TimeTrack(start time.Time, name string) {
+	if options.Config.LogTimeTrack == true {
+		elapsed := time.Since(start)
+		log.Infof("%s took %s", name, elapsed)
+	}
 }

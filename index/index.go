@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/utils"
 )
 
 type Index struct {
@@ -24,6 +25,7 @@ type Index struct {
 
 // GetChecksum returns the SHA512 hash of the file at 'path'.
 func GetChecksum(path string) (string, error) {
+	defer utils.TimeTrack(time.Now(), "index/GetChecksum()")
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -58,6 +60,7 @@ func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDi
 
 //Recursively genearate an index for dirPath
 func GetIndex(dirPath string) (map[string]*Index, error) {
+	defer utils.TimeTrack(time.Now(), "index/GetIndex()")
 	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
 		dirPath = "./"
 	}

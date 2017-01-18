@@ -31,6 +31,7 @@ type Conf struct {
 	NodeEndpoint           bool     `toml:"node_endpoint"`
 	HeartBeatTrackInterval string   `toml:"heartbeat_tracker_interval"`
 	HeartBeatOffline       string   `toml:"heartbeat_offline"`
+	LogTimeTrack           bool     `toml:"log_timetrack"`
 	Version                bool
 	VersionJSON            bool
 	RunCLI                 bool
@@ -60,6 +61,7 @@ func GetOptions() {
 	flag.BoolVar(&Config.NodeEndpoint, "node-endpoint", false, "Enable or disable the /nodes endpoint that may reveal sensitive information")
 	flag.StringVar(&Config.HeartBeatTrackInterval, "heartbeat-track-interval", "30s", "How often update registered nodes status")
 	flag.StringVar(&Config.HeartBeatOffline, "heartbeat-offline", "5m", "How long a node can go without a heartbeat before it's marked offline")
+	flag.BoolVar(&Config.LogTimeTrack, "log-timetrack", true, "Enable or disable logging of utils/TimeTrack() (For benchmarking/debugging)")
 
 	//Node command line flags
 	flag.BoolVar(&Config.RunNode, "node", false, "Run as a node")

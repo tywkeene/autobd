@@ -11,6 +11,7 @@ import (
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
 	"io"
 	"io/ioutil"
@@ -101,6 +102,7 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 //It will then generate a index by calling api.GetIndex(), then writes it to the client as a
 //map[string]*index.Index encoded in json
 func ServeIndex(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/ServeIndex()")
 	LogHttp(r)
 
 	uuid := GetQueryValue("uuid", w, r)
@@ -130,6 +132,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 //ServeServerVer() is the http handler for the "/version" http API endpoint.
 //It writes the json encoded struct version.VersionInfo to the client
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/ServeServerVer()")
 	LogHttp(r)
 	serialVer := version.JSON()
 
@@ -146,6 +149,7 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 //If the file is a normal file, it will be served with http.ServeContent(), with the Content-Type http-header
 //set by http.ServeContent()
 func ServeSync(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/ServeSync()")
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
@@ -250,6 +254,7 @@ func WriteNodeMetadata(path string) error {
 //ListNodes() is the http handler for the "/nodes" API endpoint
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/ListNodes()")
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
@@ -294,6 +299,7 @@ func StartHeartBeatTracker() {
 //It takes a node UUID and node version as json encoded strings
 //The node is added to the CurrentNodes map, with the RFC850 timestamp
 func Identify(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/Identify()")
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	version := GetQueryValue("version", w, r)
@@ -324,6 +330,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 //Nodes will request this every config.HeartbeatInterval and the server will update
 //their respective online timestamp
 func HeartBeat(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "api/HeartBeat()")
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	nodeSyncedStatus := GetQueryValue("synced", w, r)

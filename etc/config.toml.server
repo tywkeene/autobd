@@ -29,3 +29,6 @@ heartbeat_offline = "30s"
 
 #Where to store node metadata file
 node_metadata_file = ".node_metadata"
+
+#Enable or disable logging of utils/TimeTrack() (For benchmarking/debugging)
+log_timetrack = true
