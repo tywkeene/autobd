@@ -7,6 +7,7 @@ import (
 	"github.com/tywkeene/autobd/cmd"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
 	"net/http"
 	"os"
@@ -36,14 +37,13 @@ func init() {
 		cmd.Start()
 		os.Exit(0)
 	}
-	if err := os.Chdir(options.Config.Root); err != nil {
-		log.Panic(err)
-	}
+	err := os.Chdir(options.Config.Root)
+	utils.HandlePanic("main.go/init()", err)
+
 	if options.Config.RunNode == false {
 		api.SetupRoutes()
-		if err := api.ReadNodeMetadata(options.Config.NodeMetadataFile); err != nil {
-			log.Warn(err)
-		}
+		err := api.ReadNodeMetadata(options.Config.NodeMetadataFile)
+		utils.HandleError("main.go/init()", err, utils.ErrorActionWarn)
 	}
 }
 
@@ -87,9 +87,8 @@ func printLogo() {
 func main() {
 	if options.Config.RunNode == true {
 		localNode := node.InitNode(options.Config.NodeConfig)
-		if err := localNode.UpdateLoop(); err != nil {
-			log.Panic(err)
-		}
+		err := localNode.UpdateLoop()
+		utils.HandlePanic("main.go/init()", err)
 	}
 	if options.Config.Cores > runtime.NumCPU() {
 		log.Error("Requested processor value greater than number of actual processors, using default")

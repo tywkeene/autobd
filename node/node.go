@@ -9,6 +9,7 @@ import (
 	"github.com/tywkeene/autobd/client"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
 	"io/ioutil"
 	"os"
@@ -98,8 +99,7 @@ func (node *Node) StartHeart() {
 					continue
 				}
 				_, err := server.SendHeartbeat(node.UUID, node.Synced, nodeUseragent)
-				if err != nil {
-					log.Error(err)
+				if utils.HandleError("node/StartHeart()", err, utils.ErrorActionErr) == true {
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
 						server.Online = false
@@ -134,13 +134,11 @@ func (node *Node) ValidateAndIdentifyWithServers() error {
 
 		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
 			if err := node.validateServerVersion(remoteVer); err != nil {
-				log.Error(err)
 				return err
 			}
 		}
 		_, err = server.IdentifyWithServer(node.UUID, nodeUseragent)
-		if err != nil {
-			log.Error(err)
+		if utils.HandleError("node/ValidateAndIdentifyWithServers", err, utils.ErrorActionErr) == true {
 			continue
 		}
 	}
@@ -207,23 +205,14 @@ func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 		log.Printf("Need %s from %s\n", object.Name, s.Address)
 		if object.IsDir == true {
 			err := s.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
-			if err != nil {
-				if err.Error() == "EOF" {
-					log.Info("OK")
-				} else {
-					log.Error(err)
-				}
+			if utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo) == true {
 				continue
 			}
 		} else if object.IsDir == false {
 			err := s.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
 			if err != nil {
 				//EOF just means the sync is finished, don't log an error
-				if err.Error() == "EOF" {
-					log.Info("OK")
-				} else {
-					log.Error(err)
-				}
+				utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo)
 				continue
 			}
 		}
@@ -231,20 +220,17 @@ func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 }
 
 func (node *Node) UpdateLoop() error {
-	if err := node.ValidateAndIdentifyWithServers(); err != nil {
-		return err
-	}
+	err := node.ValidateAndIdentifyWithServers()
+	utils.HandlePanic("node/UpdateLoop", err)
 	log.Printf("Running as a node. Updating every %s with %s",
 		node.Config.UpdateInterval, node.Config.Servers)
 
 	updateInterval, err := time.ParseDuration(node.Config.UpdateInterval)
-	if err != nil {
-		return err
-	}
+	utils.HandlePanic("node/UpdateLoop()", err)
 	for {
 		time.Sleep(updateInterval)
 		if node.CountOnlineServers() == 0 {
-			log.Panic("No servers online, dying")
+			utils.HandlePanic("node/UpdateLoop()", fmt.Errorf("No servers online, dying"))
 		}
 		for _, server := range node.Servers {
 			if server.Online == false {
@@ -253,16 +239,17 @@ func (node *Node) UpdateLoop() error {
 			}
 			need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
 			if err != nil {
-				log.Error(err)
-				continue
-			}
+				if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionErr) == true {
+					continue
+				}
 
-			if len(need) == 0 {
-				node.Synced = true
-				continue
+				if len(need) == 0 {
+					node.Synced = true
+					continue
+				}
+				node.SyncUp(need, server)
 			}
-			node.SyncUp(need, server)
 		}
 	}
-	return nil
+	return err
 }

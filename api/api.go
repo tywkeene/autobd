@@ -44,12 +44,6 @@ func LogHttp(r *http.Request) {
 	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
 }
 
-func LogHttpErr(w http.ResponseWriter, r *http.Request, err error, status int) {
-	log.Errorf("Returned error \"%s\" (HTTP %s) to %s", err.Error(), http.StatusText(status), r.RemoteAddr)
-	serialErr, _ := json.Marshal(err.Error())
-	http.Error(w, string(serialErr), status)
-}
-
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
@@ -59,7 +53,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-//Check and make sure the client wants or can handle gzip, and replace the writer if it
+//Handle and make sure the client wants or can handle gzip, and replace the writer if it
 //can, if not, simply use the normal http.ResponseWriter
 func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -79,17 +73,15 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 //a http.ResponseWriter 'w', and a http.Request 'r'. In the event that an error is encountered
 //the error will be returned to the client via logging facilities that use 'w' and 'r'
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
+	errHandle := utils.NewHttpErrorHandle("api/GetQueryValue()", w, r)
 	query, err := url.ParseQuery(r.URL.RawQuery)
-	if err != nil {
-		log.Error(err)
-		LogHttpErr(w, r, fmt.Errorf("Query parse error"), http.StatusInternalServerError)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return ""
 	}
 	value := query.Get(name)
 	if len(value) == 0 || value == "" {
 		if name != "uuid" {
-			log.Error(err)
-			LogHttpErr(w, r, fmt.Errorf("Must specify %s", name), http.StatusBadRequest)
+			errHandle.Handle(fmt.Errorf("Must specify %s", name), http.StatusBadRequest, utils.ErrorActionErr)
 			return ""
 		}
 	}
@@ -103,24 +95,21 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 //map[string]*index.Index encoded in json
 func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ServeIndex()")
+	errHandle := utils.NewHttpErrorHandle("api/ServeIndex()", w, r)
 	LogHttp(r)
 
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
-		log.Error("Invalid or empty node UUID")
-		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
-		log.Error("No directory defined")
 		return
 	}
 	dirIndex, err := index.GetIndex(dir)
-	if err != nil {
-		log.Error(err)
-		LogHttpErr(w, r, fmt.Errorf("Error getting index"), http.StatusInternalServerError)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
 	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
@@ -150,11 +139,11 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 //set by http.ServeContent()
 func ServeSync(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ServeSync()")
+	errHandle := utils.NewHttpErrorHandle("api/ServeSync()", w, r)
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
-		log.Error("Invalid or empty node UUID")
-		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 	grab := GetQueryValue("grab", w, r)
@@ -162,22 +151,17 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fd, err := os.Open(grab)
-	if err != nil {
-		log.Error(err)
-		LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
 	defer fd.Close()
 	info, err := fd.Stat()
-	if err != nil {
-		log.Error(err)
-		LogHttpErr(w, r, fmt.Errorf("Error getting file"), http.StatusInternalServerError)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
 	if info.IsDir() == true {
-		if err := packing.PackDir(grab, w); err != nil {
-			log.Error(err)
-			LogHttpErr(w, r, fmt.Errorf("Error packing directory"), http.StatusInternalServerError)
+		err := packing.PackDir(grab, w)
+		if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 			return
 		}
 		w.Header().Set("Content-Type", "application/x-tar")
@@ -255,11 +239,11 @@ func WriteNodeMetadata(path string) error {
 //It returns the CurrentNodes map encoded in json
 func ListNodes(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ListNodes()")
+	errHandle := utils.NewHttpErrorHandle("api/ListNodes()", w, r)
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false {
-		log.Error("Invalid or empty node UUID")
-		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 	lock.RLock()
@@ -272,19 +256,19 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 //nodes currently registered with the server
 func StartHeartBeatTracker() {
 	log.Infof("Updating nodes status every %s", options.Config.HeartBeatTrackInterval)
+
 	interval, err := time.ParseDuration(options.Config.HeartBeatTrackInterval)
+	utils.HandlePanic("api/StartHeartBeatTracker()", err)
+
 	cutoff, err := time.ParseDuration(options.Config.HeartBeatOffline)
-	if err != nil {
-		log.Panic(err)
-	}
+	utils.HandlePanic("api/StartHeartBeatTracker()", err)
+
 	for {
 		time.Sleep(interval)
 		lock.RLock()
 		for uuid, node := range CurrentNodes {
 			then, err := time.Parse(time.RFC850, node.LastOnline)
-			if err != nil {
-				log.Panic(err)
-			}
+			utils.HandlePanic("api/StartHeartBeatTracker()", err)
 			duration := time.Since(then)
 			if duration > cutoff && node.IsOnline == true {
 				log.Warnf("Node %s has not checked in since %s ago, marking offline", uuid, duration)
@@ -311,7 +295,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 		go StartHeartBeatTracker()
 	}
 
-	//Check to see if this node is already online
+	//Handle to see if this node is already online
 	if validateNode(uuid) == true {
 		node := GetNodeByUUID(uuid)
 		if node.IsOnline == false {
@@ -331,12 +315,12 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 //their respective online timestamp
 func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/HeartBeat()")
+	errHandle := utils.NewHttpErrorHandle("api/HeartBeat()", w, r)
 	LogHttp(r)
 	uuid := GetQueryValue("uuid", w, r)
 	nodeSyncedStatus := GetQueryValue("synced", w, r)
 	if validateNode(uuid) == false {
-		log.Error("Invalid or empty node UUID")
-		LogHttpErr(w, r, fmt.Errorf("Invalid or empty node UUID"), http.StatusUnauthorized)
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 	synced, _ := strconv.ParseBool(nodeSyncedStatus)

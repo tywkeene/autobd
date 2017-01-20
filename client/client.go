@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
-	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
@@ -36,16 +35,15 @@ func NewClient(address string) *Client {
 
 func (client *Client) ConstructUrl(endpoint string) string {
 	urlStr, err := url.Parse(client.Address + "/v" + version.GetMajor() + endpoint)
-	if err != nil {
-		log.Fatal(err)
+	if utils.HandleError("client/ConstructUrl()", err, utils.ErrorActionErr) == true {
+		return ""
 	}
 	return urlStr.String()
 }
 
 func (client *Client) ConstructRequest(endpoint string, values map[string]string) *http.Request {
 	request, err := http.NewRequest("GET", client.ConstructUrl(endpoint), nil)
-	if err != nil {
-		log.Error(err)
+	if utils.HandleError("client/ConstructRequest", err, utils.ErrorActionErr) == true {
 		return nil
 	}
 
