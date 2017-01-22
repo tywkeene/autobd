@@ -24,11 +24,11 @@ type Index struct {
 }
 
 // GetChecksum returns the SHA512 hash of the file at 'path'.
-func GetChecksum(path string) (string, error) {
+func GetChecksum(path string) string {
 	defer utils.TimeTrack(time.Now(), "index/GetChecksum()")
 	file, err := os.Open(path)
-	if err != nil {
-		return "", err
+	if utils.HandleError("index/GetChecksum()", err, utils.ErrorActionErr) == true {
+		return ""
 	}
 	defer file.Close()
 
@@ -36,22 +36,18 @@ func GetChecksum(path string) (string, error) {
 	buf := bufio.NewReader(file)
 
 	_, err = buf.WriteTo(hash)
-	if err != nil {
-		return "", err
+	if utils.HandleError("index/GetChecksum()", err, utils.ErrorActionErr) == true {
+		return ""
 	}
 
 	sum := hex.EncodeToString(hash.Sum(nil))
-	return sum, nil
+	return sum
 }
 
 func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Index {
 	var checksum string
-	var err error
 	if isDir == false {
-		checksum, err = GetChecksum(name)
-		if err != nil {
-			return nil
-		}
+		checksum = GetChecksum(name)
 	} else {
 		checksum = ""
 	}
