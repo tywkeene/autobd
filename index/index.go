@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -55,11 +56,8 @@ func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDi
 }
 
 //Recursively genearate an index for dirPath
-func GetIndex(dirPath string) (map[string]*Index, error) {
-	defer utils.TimeTrack(time.Now(), "index/GetIndex()")
-	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
-		dirPath = "./"
-	}
+func GenerateIndex(dirPath string) (map[string]*Index, error) {
+	defer utils.TimeTrack(time.Now(), "index/GenerateIndex()")
 	list, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
@@ -72,7 +70,7 @@ func GetIndex(dirPath string) (map[string]*Index, error) {
 		childPath := path.Join(dirPath, child.Name())
 		index[childPath] = NewIndex(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
 		if child.IsDir() == true {
-			childContent, err := GetIndex(childPath)
+			childContent, err := GenerateIndex(childPath)
 			if err != nil {
 				return nil, err
 			}
@@ -80,4 +78,19 @@ func GetIndex(dirPath string) (map[string]*Index, error) {
 		}
 	}
 	return index, nil
+}
+
+func GetIndex(dirPath string) (map[string]*Index, error) {
+	defer utils.TimeTrack(time.Now(), "index/GetIndex()")
+	dirStat, err := os.Lstat(dirPath)
+	if utils.HandleError("index/GetIndex()", err, utils.ErrorActionErr) == true {
+		return nil, err
+	}
+	if dirStat.IsDir() == false {
+		return nil, fmt.Errorf("Not a directory")
+	}
+	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
+		dirPath = "./"
+	}
+	return GenerateIndex(dirPath)
 }
