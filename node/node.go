@@ -202,7 +202,7 @@ func (node *Node) CompareIndex(target string, uuid string, userAgent string, cli
 
 func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
 	for _, object := range need {
-		log.Printf("Need %s from %s\n", object.Name, s.Address)
+		log.Printf("Need %s from %s", object.Name, s.Address)
 		if object.IsDir == true {
 			err := s.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
 			if utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo) == true {
@@ -238,17 +238,15 @@ func (node *Node) UpdateLoop() error {
 				continue
 			}
 			need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
-			if err != nil {
-				if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionErr) == true {
-					continue
-				}
-
-				if len(need) == 0 {
-					node.Synced = true
-					continue
-				}
-				node.SyncUp(need, server)
+			if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionWarn) == true {
+				continue
 			}
+
+			if len(need) == 0 {
+				node.Synced = true
+				continue
+			}
+			node.SyncUp(need, server)
 		}
 	}
 	return err
