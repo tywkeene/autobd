@@ -5,3 +5,4 @@ test
 .vim-bookmarks
 secret/
 devel/
+vendor/

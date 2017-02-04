@@ -1,10 +1,11 @@
 language: go
 
 go:
+    - 1.5
     - 1.6
+    - 1.7.5
 
 script:
-    - ./scripts/test.sh -r
     - ./build.sh
 
 after_script:
