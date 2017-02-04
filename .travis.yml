@@ -6,6 +6,7 @@ go:
     - 1.7.5
 
 script:
+    - ./scripts/static-analysis.sh
     - ./build.sh
 
 after_script:
