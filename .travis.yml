@@ -6,8 +6,7 @@ go:
     - 1.7.5
 
 script:
-    - go get -v ./... && ./scripts/static-analysis.sh
-    - ./build.sh
+    - ./scripts/travis.sh
 
 after_script:
     - ./autobd -h
