@@ -17,12 +17,11 @@ var (
 	CommitHash string
 	APIVer     string
 	NodeVer    string
-	CliVer     string
 )
 
 func init() {
 	options.GetOptions()
-	version.Set(CommitHash, APIVer, NodeVer, CliVer)
+	version.Set(CommitHash, APIVer, NodeVer)
 	if options.Config.VersionJSON == true {
 		fmt.Println(version.JSON())
 		os.Exit(0)
