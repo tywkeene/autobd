@@ -4,5 +4,5 @@ test
 *.swo
 .vim-bookmarks
 secret/
-devel/
 vendor/
+glide.lock

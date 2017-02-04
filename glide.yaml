@@ -1,0 +1,8 @@
+package: github.com/tywkeene/autobd
+import:
+- package: github.com/BurntSushi/toml
+  version: ^0.2.0
+- package: github.com/Sirupsen/logrus
+  version: ^0.11.0
+- package: github.com/satori/go.uuid
+  version: ^1.1.0

@@ -34,7 +34,6 @@ type Conf struct {
 	LogTimeTrack           bool     `toml:"log_timetrack"`
 	Version                bool
 	VersionJSON            bool
-	RunCLI                 bool
 	CliConfigPath          string `toml:"cli_config_path"`
 }
 
@@ -48,7 +47,6 @@ func GetOptions() {
 	flag.IntVar(&Config.Cores, "cores", 2, "Amount of cores to pass to GOMAXPROC (experimental)")
 	flag.BoolVar(&Config.Version, "version", false, "Print version information and exit")
 	flag.BoolVar(&Config.VersionJSON, "json-version", false, "Print version information as a JSON encoded struct and exit")
-	flag.BoolVar(&Config.RunCLI, "cli", false, "Run the autobd cli")
 	flag.StringVar(&Config.CliConfigPath, "cli-config", "etc/config.toml.cli", "Path to the command line configuration file")
 
 	//Server command line flags

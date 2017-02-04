@@ -4,7 +4,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/api"
-	"github.com/tywkeene/autobd/cmd"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/utils"
@@ -33,10 +32,6 @@ func init() {
 		os.Exit(0)
 	}
 	printLogo()
-	if options.Config.RunCLI == true {
-		cmd.Start()
-		os.Exit(0)
-	}
 	err := os.Chdir(options.Config.Root)
 	utils.HandlePanic("main.go/init()", err)
 
@@ -66,19 +61,8 @@ func printLogo() {
 	╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝       ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
 	Backing you up since right now...
 	`
-	const cli = `
-	 █████╗ ██╗   ██╗████████╗ ██████╗ ██████╗ ██████╗        ██████╗██╗     ██╗
-	██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗      ██╔════╝██║     ██║
-	███████║██║   ██║   ██║   ██║   ██║██████╔╝██║  ██║█████╗██║     ██║     ██║
-	██╔══██║██║   ██║   ██║   ██║   ██║██╔══██╗██║  ██║╚════╝██║     ██║     ██║
-	██║  ██║╚██████╔╝   ██║   ╚██████╔╝██████╔╝██████╔╝      ╚██████╗███████╗██║
-	╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝        ╚═════╝╚══════╝╚═╝
-	Doing what you want since right now...
-	`
 	if options.Config.RunNode == true {
 		fmt.Println(node)
-	} else if options.Config.RunCLI == true {
-		fmt.Println(cli)
 	} else {
 		fmt.Println(server)
 	}
