@@ -249,5 +249,4 @@ func (node *Node) UpdateLoop() error {
 			node.SyncUp(need, server)
 		}
 	}
-	return err
 }
