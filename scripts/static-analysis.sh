@@ -1,6 +1,4 @@
 #!/bin/bash
 
 echo "Running go vet..."
-for dir in $(go list ./...); do
-        go vet -v $dir
-done
+go vet $(go list ./... | grep -v ./vendor)
