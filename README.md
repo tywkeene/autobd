@@ -35,7 +35,7 @@ still online. So you need only access the server, to get information on the enti
 
 That's autobd in a nutshell.
 
-See the [tutorial](https://github.com/tywkeene/autobd/blob/master/TUTORIAL.md) for a more in-depth guide.
+See the [tutorial](https://github.com/tywkeene/autobd/blob/master/Documentation/TUTORIAL.md) for a more in-depth guide.
 
 
 ## Getting autobd
@@ -99,7 +99,7 @@ Sets up a docker network for server and nodes to communicate.
 (I basically just use this testing, may or may not be useful to you)
 
 ## The API
-See [API.md](https://github.com/tywkeene/autobd/blob/master/API.md)
+See [API.md](https://github.com/tywkeene/autobd/blob/master/Documentation/API.md)
 
 ## Contributing
 
