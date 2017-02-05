@@ -6,7 +6,7 @@ go:
     - 1.7.5
 
 script:
-    - ./scripts/travis.sh
+    - ./scripts/git/travis.sh
 
 after_script:
     - ./autobd -h

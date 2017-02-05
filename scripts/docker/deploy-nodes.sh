@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-bash ./scripts/build_image.sh "node"
+bash ./scripts/docker/build_image.sh "node"
 
 ETC_DIR="/home/$USER/etc/autobd"
 DATA_DIR="/home/$USER/data/autobd-nodes/node"

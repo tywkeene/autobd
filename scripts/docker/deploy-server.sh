@@ -1,7 +1,7 @@
 #!/bin/bash
 
-bash ./scripts/rm_container.sh "autobd-server"
-bash ./scripts/build_image.sh "server"
+bash ./scripts/docker/rm_container.sh "autobd-server"
+bash ./scripts/docker/build_image.sh "server"
 
 DATA_DIR="/home/$USER/data/server-data"
 SECRET_DIR="/home/$USER/secret"
