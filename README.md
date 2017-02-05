@@ -35,7 +35,7 @@ still online. So you need only access the server, to get information on the enti
 
 That's autobd in a nutshell.
 
-See the [tutorial](https://github.com/tywkeene/autobd/blob/master/Documentation/TUTORIAL.md) for a more in-depth guide.
+See the [tutorial](./Documentation/TUTORIAL.md) for a more in-depth guide.
 
 
 ## Getting autobd
@@ -99,9 +99,9 @@ Sets up a docker network for server and nodes to communicate.
 (I basically just use this testing, may or may not be useful to you)
 
 ## The API
-See [API.md](https://github.com/tywkeene/autobd/blob/master/Documentation/API.md)
+See [API.md](./Documentation/API.md)
 
 ## Contributing
 
 Open a pull request or issue with your idea or bug. Really. Anything wrong with anything anywhere, open a ticket and let me know,
-then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/tywkeene/autobd) before creating a new ticket)
+then we can work on it together :) (Just be sure to check the [story board](https://waffle.io/tywkeene/autobd) before creating a new ticket) and checkout the [Development Process](./Documentation/development_process.png) flowchart.
