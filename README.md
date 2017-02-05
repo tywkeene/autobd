@@ -1,6 +1,7 @@
 ![autobd] (logo.png?raw=true "autobd")
 # Backing you up since whenever...
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/tywkeene/autobd)](https://goreportcard.com/report/github.com/tywkeene/autobd)
 [![Stories in Ready](https://badge.waffle.io/tywkeene/autobd.svg?label=ready&title=Ready)](http://waffle.io/tywkeene/autobd)
 [![Build Status](https://travis-ci.org/tywkeene/autobd.svg)](https://travis-ci.org/tywkeene/autobd)
 [![GoDoc](https://godoc.org/github.com/tywkeene/autobd?status.svg)](https://godoc.org/github.com/tywkeene/autobd)
@@ -17,13 +18,13 @@ or installation of any additional software, and is super easy to get running via
 
 ### Enter Autobd.
 
-All you need to do on server A is set the directory you want to watch via the ```DATA_DIR``` variable in the ```scripts/deploy-server.sh``` script, then you can 
-start the daemon via the same script. This will start a single autobd server instance, running inside of docker. You can ```curl
+All you need to do on server A is set the directory you want to watch via the ```DATA_DIR``` variable in ```scripts/docker/deploy-server.sh```, then you can 
+start the daemon by running this script. This will start a single autobd server instance, running inside of docker. You can ```curl
 http://0.0.0.0:8080/version```, and you will get version information from the server.
 
 Now you just need to get your nodes going. This is just like the server, except you're using another script, pre-written. All
 you need to do is let the node know which directory you want it to put synced files into, via the ```DATA_DIR``` variable in
-the ```scripts/deploy-nodes.sh``` script and run the script. You're good to go.
+the ```scripts/docker/deploy-nodes.sh``` script and run the it. You're good to go.
 
 Once the nodes and server are running, the nodes will identify with the server, and request an initial file index from there server.
 The first sync of course will be quite large, since the node is getting everything, but subsequent syncs will usually be much 
@@ -68,8 +69,8 @@ Autobd ships with two configuration files, config.toml.server and config.toml.no
 
 Autobd ships with two Dockerfiles and the scripts to deploy both server and node containers. You'll of course need [docker](https://docs.docker.com/engine/installation/)
 
-#### scripts/deploy-server.sh
-Usage: ./scripts/deploy-server.sh
+#### scripts/docker/deploy-server.sh
+Usage: ./scripts/docker/deploy-server.sh
 
 Removes old autobd-server container, builds a new image, and deploys a new autobd-server container using the arguments:
 ```
@@ -81,19 +82,19 @@ PORT=8080
 These variables may be modified to suit your needs.
 
 
-#### scripts/deploy-nodes.sh
-Usage: ./scripts/deploy-nodes.sh n
+#### scripts/docker/deploy-nodes.sh
+Usage: ./scripts/docker/deploy-nodes.sh n
 
 
 Builds new autobd-node images, and deploys n nodes
 
-#### scripts/kill-nodes.sh
-Usage: ./scripts/kill-nodes.sh n
+#### scripts/docker/kill-nodes.sh
+Usage: ./scripts/docker/kill-nodes.sh n
 
 Runs ```docker rm -f```for n nodes
 
-#### scripts/setup-network.sh
-Usage ./scripts/setup-network.sh
+#### scripts/docker/setup-network.sh
+Usage ./scripts/docker/setup-network.sh
 
 Sets up a docker network for server and nodes to communicate. 
 (I basically just use this testing, may or may not be useful to you)
