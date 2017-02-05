@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"syscall"
 )
 
 var (
@@ -32,6 +33,9 @@ func init() {
 	}
 	printLogo()
 	err := os.Chdir(options.Config.Root)
+	utils.HandlePanic("main.go/init()", err)
+
+	err = syscall.Chroot(options.Config.Root)
 	utils.HandlePanic("main.go/init()", err)
 
 	if options.Config.RunNode == false {
