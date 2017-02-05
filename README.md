@@ -1,6 +1,7 @@
 ![autobd] (logo.png?raw=true "autobd")
 # Backing you up since whenever...
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/tywkeene/autobd)](https://goreportcard.com/report/github.com/tywkeene/autobd)
 [![Stories in Ready](https://badge.waffle.io/tywkeene/autobd.svg?label=ready&title=Ready)](http://waffle.io/tywkeene/autobd)
 [![Build Status](https://travis-ci.org/tywkeene/autobd.svg)](https://travis-ci.org/tywkeene/autobd)
 [![GoDoc](https://godoc.org/github.com/tywkeene/autobd?status.svg)](https://godoc.org/github.com/tywkeene/autobd)
