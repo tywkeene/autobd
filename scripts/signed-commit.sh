@@ -8,4 +8,4 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-git commit -a -S -m "$1"
+git commit -S -m "$1"
