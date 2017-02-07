@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	//"syscall"
 )
 
 var (
