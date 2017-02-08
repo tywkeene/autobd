@@ -148,33 +148,24 @@ func (node *Node) ValidateAndIdentifyWithServers() error {
 
 func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) []*index.Index {
 	need := make([]*index.Index, 0)
-	for objName, object := range remote {
-		_, existsLocally := local[object.Name] //Does it exist on the node?
-
+	for objName, remoteObject := range remote {
+		_, existsLocally := local[remoteObject.Name] //Does it exist on the node?
 		//If it doesn't exist on the node at all, we obviously need it
 		if existsLocally == false {
-			need = append(need, remote[objName])
+			need = append(need, remoteObject)
 			continue
 		}
-
 		// If it does, and it's a directory, and it has children
-		if existsLocally == true && object.IsDir == true && object.Files != nil {
-			dirNeed := CompareDirs(local[objName].Files, object.Files) //Scan the children
+		if existsLocally == true && remoteObject.IsDir == true && remoteObject.Files != nil {
+			dirNeed := CompareDirs(local[objName].Files, remoteObject.Files) //Scan the children
 			need = append(need, dirNeed...)
 			continue
 		}
-
-		//If it isn't a directory and doesn't exist
-		if existsLocally == false && object.IsDir == false {
-			need = append(need, remote[objName])
-			continue
-		}
-
 		//If it is a file and does exist, compare checksums
-		if existsLocally == true && object.IsDir == false {
-			if local[objName].Checksum != remote[objName].Checksum {
+		if existsLocally == true && remoteObject.IsDir == false {
+			if local[objName].Checksum != remoteObject.Checksum {
 				log.Info("Checksum mismatch:", objName)
-				need = append(need, remote[objName])
+				need = append(need, remoteObject)
 				continue
 			}
 		}
@@ -192,7 +183,10 @@ func (node *Node) CompareIndex(target string, uuid string, userAgent string, cli
 	if err := json.Unmarshal(serial, &remoteIndex); err != nil {
 		return nil, err
 	}
-	localIndex, err := index.GetIndex("/")
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		os.Mkdir(target, 0755)
+	}
+	localIndex, err := index.GetIndex(target)
 	if err != nil {
 		return nil, err
 	}
@@ -200,23 +194,40 @@ func (node *Node) CompareIndex(target string, uuid string, userAgent string, cli
 	return need, nil
 }
 
-func (node *Node) SyncUp(need []*index.Index, s *client.Client) {
-	for _, object := range need {
-		log.Printf("Need %s from %s", object.Name, s.Address)
-		if object.IsDir == true {
-			err := s.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
-			if utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo) == true {
-				continue
-			}
-		} else if object.IsDir == false {
-			err := s.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
-			if err != nil {
-				//EOF just means the sync is finished, don't log an error
-				utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo)
-				continue
+func (node *Node) SetSync(value bool) {
+	if value != node.Synced {
+		log.Infof("node.Synced changed from %v to %v", node.Synced, value)
+		node.Synced = value
+	}
+}
+
+func (node *Node) SyncUp(server *client.Client) error {
+	need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
+	if err != nil {
+		return err
+	}
+	if len(need) > 0 {
+		node.SetSync(false)
+		for _, object := range need {
+			log.Printf("Need %s from %s", object.Name, server.Address)
+			if object.IsDir == true {
+				err := server.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
+				if utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo) == true {
+					continue
+				}
+			} else if object.IsDir == false {
+				err := server.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
+				if err != nil {
+					//EOF just means the sync is finished, don't log an error
+					utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo)
+					continue
+				}
 			}
 		}
+	} else {
+		node.SetSync(true)
 	}
+	return nil
 }
 
 func (node *Node) UpdateLoop() error {
@@ -237,16 +248,10 @@ func (node *Node) UpdateLoop() error {
 				log.Info("Skipping offline server: ", server.Address)
 				continue
 			}
-			need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
+			err := node.SyncUp(server)
 			if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionWarn) == true {
-				continue
+				break
 			}
-
-			if len(need) == 0 {
-				node.Synced = true
-				continue
-			}
-			node.SyncUp(need, server)
 		}
 	}
 }
