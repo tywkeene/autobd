@@ -3,7 +3,6 @@
 build_image(){
     echo "Building $1..."
     bash ./scripts/build/build.sh
-    docker rmi -f autobd:$1
     docker build --rm -t autobd:$1 -f docker/Dockerfile.$1 .
 }
 
