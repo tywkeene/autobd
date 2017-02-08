@@ -197,13 +197,11 @@ func TestServeSync(t *testing.T) {
 	}
 }
 
-/*
 //Ensure we get a consistent list of nodes
 func TestListNodes(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.ListNodes)
 
-	api.CurrentNodes = nil
 	api.AddNode("testing0", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
 	api.AddNode("testing1", &api.Node{"0.0.0.1", "0.0.0", time.Now().Format(time.RFC850), true, false})
 	api.AddNode("testing2", &api.Node{"0.0.0.2", "0.0.0", time.Now().Format(time.RFC850), true, false})
@@ -229,16 +227,12 @@ func TestListNodes(t *testing.T) {
 	if response == nil {
 		t.Error("Failed to get node list from server")
 	}
-
-	for uuidExpect, _ := range api.CurrentNodes {
-		for uuidResponse, _ := range response {
-			if uuidResponse != uuidExpect {
-				t.Error("Node lists do not match:", uuidExpect, uuidResponse)
-			}
+	for key, _ := range response {
+		if _, ok := api.CurrentNodes[key]; ok == false {
+			t.Error("Node not in node list")
 		}
 	}
 }
-*/
 
 //Ensure we can identify as a node with the server
 func TestIdentify(t *testing.T) {
