@@ -69,7 +69,7 @@ func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-//GetQueryValue() takes a name of a key:value pair to fetchf rom a URL encoded query,
+//GetQueryValue() takes a name of a key:value pair to fetch from a URL encoded query,
 //a http.ResponseWriter 'w', and a http.Request 'r'. In the event that an error is encountered
 //the error will be returned to the client via logging facilities that use 'w' and 'r'
 func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
@@ -78,14 +78,7 @@ func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) string {
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return ""
 	}
-	value := query.Get(name)
-	if len(value) == 0 || value == "" {
-		if name != "uuid" {
-			errHandle.Handle(fmt.Errorf("Must specify %s", name), http.StatusBadRequest, utils.ErrorActionErr)
-			return ""
-		}
-	}
-	return value
+	return query.Get(name)
 }
 
 //ServeIndex() is the http handler for the "/index" API endpoint.
@@ -99,13 +92,16 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	LogHttp(r)
 
 	uuid := GetQueryValue("uuid", w, r)
-	if validateNode(uuid) == false {
-		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
+	if validateNode(uuid) == false || uuid == "" {
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"),
+			http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 
 	dir := GetQueryValue("dir", w, r)
 	if dir == "" {
+		errHandle.Handle(fmt.Errorf("Must specify directory"),
+			http.StatusBadRequest, utils.ErrorActionErr)
 		return
 	}
 	dirIndex, err := index.GetIndex(dir)
@@ -175,7 +171,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 func GetNodeByUUID(uuid string) *Node {
 	lock.RLock()
 	defer lock.RUnlock()
-	if CurrentNodes == nil {
+	if uuid == "" || CurrentNodes == nil {
 		return nil
 	}
 	return CurrentNodes[uuid]

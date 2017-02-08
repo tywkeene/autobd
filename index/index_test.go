@@ -2,7 +2,6 @@ package index_test
 
 import (
 	"github.com/tywkeene/autobd/index"
-	"syscall"
 	"testing"
 )
 
@@ -24,17 +23,20 @@ func isEmptyIndex(data map[string]*index.Index, shouldBeEmpty bool) bool {
 	return false
 }
 
+func (e *expect) Die(t *testing.T, msg string) {
+	e.Print(t)
+	t.Fatal(msg)
+}
+
 func (e *expect) testError(t *testing.T, err error) {
 	switch e.ErrEqNil {
 	case true:
 		if err != nil {
-			e.Print(t)
-			t.Fatal("Err should be nil, but is not")
+			e.Die(t, "Err should be nil, but is not:"+err.Error())
 		}
 	case false:
 		if err == nil {
-			e.Print(t)
-			t.Fatal("Err should not be nil, but is not")
+			e.Die(t, "Err should not be nil, but is not")
 		}
 	}
 }
@@ -43,19 +45,17 @@ func (e *expect) testIndex(t *testing.T, data map[string]*index.Index) {
 	switch e.DataEqNil {
 	case true:
 		if isEmptyIndex(data, e.DataEqNil) == false {
-			e.Print(t)
-			t.Fatal("Index should be empty, but is not")
+			e.Die(t, "Index should be empty, but is not")
 		}
 	case false:
 		e.Print(t)
 		if isEmptyIndex(data, e.DataEqNil) == true {
-			t.Fatal("Index should not be empty, but is")
+			e.Die(t, "Index should not be empty, but is")
 		}
 	}
 }
 
 func TestGetIndex(t *testing.T) {
-	syscall.Chroot("./")
 	var table = []expect{
 		//Valid inputs Data should be != nil, err should be == nil
 		expect{Input: "./", DataEqNil: false, ErrEqNil: true},
@@ -64,6 +64,7 @@ func TestGetIndex(t *testing.T) {
 		expect{Input: "./index.go", DataEqNil: true, ErrEqNil: false},
 		expect{Input: "../././.asdf", DataEqNil: true, ErrEqNil: false},
 		expect{Input: "directoryasdf", DataEqNil: true, ErrEqNil: false},
+		expect{Input: "", DataEqNil: true, ErrEqNil: false},
 	}
 	t.Logf("Running %d tests", len(table))
 	for i, test := range table {
