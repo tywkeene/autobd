@@ -25,11 +25,11 @@ import (
 )
 
 type Node struct {
-	Address    string //Address of the node
-	Version    string //Version of the node
-	LastOnline string //Timestamp of when the node last sent a heartbeat
-	IsOnline   bool   //Is the node currently online?
-	Synced     bool   //Is the node synced with this server?
+	Address    string `json:"address"`     //Address of the node
+	Version    string `json:"version"`     //Version of the node
+	LastOnline string `json:"last_online"` //Timestamp of when the node last sent a heartbeat
+	IsOnline   bool   `json:"is_online"`   //Is the node currently online?
+	Synced     bool   `json:"synced"`      //Is the node synced with this server?
 }
 
 type NodeMetadata map[string]*Node
