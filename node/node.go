@@ -6,7 +6,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
-	"github.com/tywkeene/autobd/client"
+	"github.com/tywkeene/autobd/connection"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/utils"
@@ -18,9 +18,8 @@ import (
 )
 
 type Node struct {
-	Servers map[string]*client.Client
+	Servers map[string]*connection.Connection
 	UUID    string
-	Synced  bool
 	Config  options.NodeConf
 }
 
@@ -28,11 +27,11 @@ var localNode *Node
 var nodeUseragent string = "Autobd-node/" + version.GetNodeVersion()
 
 func newNode(config options.NodeConf) *Node {
-	servers := make(map[string]*client.Client, 0)
+	servers := make(map[string]*connection.Connection, 0)
 	for _, url := range config.Servers {
-		servers[url] = client.NewClient(url)
+		servers[url] = connection.NewConnection(url)
 	}
-	return &Node{servers, "", false, config}
+	return &Node{Servers: servers, UUID: "", Config: config}
 }
 
 func InitNode(config options.NodeConf) *Node {
@@ -98,12 +97,12 @@ func (node *Node) StartHeart() {
 				if server.Online == false {
 					continue
 				}
-				_, err := server.SendHeartbeat(node.UUID, node.Synced, nodeUseragent)
+				_, err := server.SendHeartbeat(node.UUID, nodeUseragent)
 				if utils.HandleError("node/StartHeart()", err, utils.ErrorActionErr) == true {
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
-						server.Online = false
-						log.Error(server.Address + " has missed max heartbeats, ignoring")
+						server.SetOnline(false)
+						server.SetSynced(false)
 					}
 				}
 			}
@@ -174,8 +173,8 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 }
 
 //Compare a local and remote index, return a slice of needed indexes (or nil)
-func (node *Node) CompareIndex(target string, uuid string, userAgent string, client *client.Client) ([]*index.Index, error) {
-	serial, err := client.RequestIndex(target, uuid, userAgent)
+func (node *Node) CompareIndex(target string, uuid string, userAgent string, server *connection.Connection) ([]*index.Index, error) {
+	serial, err := server.RequestIndex(target, uuid, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -194,20 +193,22 @@ func (node *Node) CompareIndex(target string, uuid string, userAgent string, cli
 	return need, nil
 }
 
-func (node *Node) SetSync(value bool) {
-	if value != node.Synced {
-		log.Infof("node.Synced changed from %v to %v", node.Synced, value)
-		node.Synced = value
+func (node *Node) IsSynced() bool {
+	for _, server := range node.Servers {
+		if server.Synced == false {
+			return false
+		}
 	}
+	return true
 }
 
-func (node *Node) SyncUp(server *client.Client) error {
+func (node *Node) Sync(server *connection.Connection) error {
 	need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
 	if err != nil {
 		return err
 	}
 	if len(need) > 0 {
-		node.SetSync(false)
+		server.SetSynced(false)
 		for _, object := range need {
 			log.Printf("Need %s from %s", object.Name, server.Address)
 			if object.IsDir == true {
@@ -225,7 +226,7 @@ func (node *Node) SyncUp(server *client.Client) error {
 			}
 		}
 	} else {
-		node.SetSync(true)
+		server.SetSynced(true)
 	}
 	return nil
 }
@@ -248,7 +249,7 @@ func (node *Node) UpdateLoop() error {
 				log.Info("Skipping offline server: ", server.Address)
 				continue
 			}
-			err := node.SyncUp(server)
+			err := node.Sync(server)
 			if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionWarn) == true {
 				break
 			}
