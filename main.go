@@ -32,12 +32,12 @@ func init() {
 	}
 	printLogo()
 	err := os.Chdir(options.Config.Root)
-	utils.HandlePanic("main.go/init()", err)
+	utils.HandlePanic(err)
 
 	if options.Config.RunNode == false {
 		api.SetupRoutes()
 		err := api.ReadNodeList(options.Config.NodeListFile)
-		utils.HandleError("main.go/init()", err, utils.ErrorActionWarn)
+		utils.HandleError(err, utils.ErrorActionWarn)
 	}
 }
 
@@ -71,7 +71,7 @@ func main() {
 	if options.Config.RunNode == true {
 		localNode := node.InitNode(options.Config.NodeConfig)
 		err := localNode.UpdateLoop()
-		utils.HandlePanic("main.go/init()", err)
+		utils.HandlePanic(err)
 	}
 	if options.Config.Cores > runtime.NumCPU() {
 		log.Error("Requested processor value greater than number of actual processors, using default")

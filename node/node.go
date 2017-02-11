@@ -98,7 +98,7 @@ func (node *Node) StartHeart() {
 					continue
 				}
 				_, err := server.SendHeartbeat(node.UUID)
-				if utils.HandleError("node/StartHeart()", err, utils.ErrorActionErr) == true {
+				if utils.HandleError(err, utils.ErrorActionErr) == true {
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
 						server.SetOnline(false)
@@ -137,7 +137,7 @@ func (node *Node) Identify() error {
 			}
 		}
 		_, err = server.IdentifyWithServer(version.GetNodeVersion(), node.UUID)
-		if utils.HandleError("node/Identify()", err, utils.ErrorActionErr) == true {
+		if utils.HandleError(err, utils.ErrorActionErr) == true {
 			continue
 		}
 	}
@@ -213,14 +213,14 @@ func (node *Node) Sync(server *connection.Connection) error {
 			log.Printf("Need %s from %s", object.Name, server.Address)
 			if object.IsDir == true {
 				err := server.RequestSyncDir(object.Name, node.UUID)
-				if utils.HandleError("node/Sync()", err, utils.ErrorActionInfo) == true {
+				if utils.HandleError(err, utils.ErrorActionInfo) == true {
 					continue
 				}
 			} else if object.IsDir == false {
 				err := server.RequestSyncFile(object.Name, node.UUID)
 				if err != nil {
 					//EOF just means the sync is finished, don't log an error
-					utils.HandleError("node/Sync()", err, utils.ErrorActionInfo)
+					utils.HandleError(err, utils.ErrorActionInfo)
 					continue
 				}
 			}
@@ -233,17 +233,17 @@ func (node *Node) Sync(server *connection.Connection) error {
 
 func (node *Node) UpdateLoop() error {
 	err := node.Identify()
-	utils.HandlePanic("node/UpdateLoop()", err)
+	utils.HandlePanic(err)
 
 	log.Printf("Running as a node. Updating every %s with %s",
 		node.Config.UpdateInterval, node.Config.Servers)
 
 	updateInterval, err := time.ParseDuration(node.Config.UpdateInterval)
-	utils.HandlePanic("node/UpdateLoop()", err)
+	utils.HandlePanic(err)
 	for {
 		time.Sleep(updateInterval)
 		if node.CountOnlineServers() == 0 {
-			utils.HandlePanic("node/UpdateLoop()", fmt.Errorf("No servers online, dying"))
+			utils.HandlePanic(fmt.Errorf("No servers online, dying"))
 		}
 		for _, server := range node.Servers {
 			if server.Online == false {
@@ -251,7 +251,7 @@ func (node *Node) UpdateLoop() error {
 				continue
 			}
 			err := node.Sync(server)
-			if utils.HandleError("node/UpdateLoop()", err, utils.ErrorActionWarn) == true {
+			if utils.HandleError(err, utils.ErrorActionWarn) == true {
 				break
 			}
 		}

@@ -2,13 +2,13 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/options"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
+	"runtime"
 	"time"
 )
 
@@ -35,7 +35,9 @@ func NewHttpErrorHandle(caller string, response http.ResponseWriter, request *ht
 // Otherwise, if there is no error, h.Handle returns false
 func (h *HttpErrorHandler) Handle(err error, httpStatus int, action int) bool {
 	if err != nil {
-		HandleError("utils/h.Handle()->"+h.Caller, fmt.Errorf("%s: %s", h.Request.RemoteAddr, err.Error()), action)
+		_, filepath, line, _ := runtime.Caller(1)
+		_, file := path.Split(filepath)
+		log.Errorf("HttpErrorHandler()->[file:%s line:%d]: %s", file, line, err.Error())
 		serialErr, _ := json.Marshal(err.Error())
 		http.Error(h.Response, string(serialErr), httpStatus)
 	}
@@ -43,58 +45,34 @@ func (h *HttpErrorHandler) Handle(err error, httpStatus int, action int) bool {
 }
 
 // HandlePanic _Never_ returns on error, instead it panics
-func HandlePanic(caller string, err error) {
+func HandlePanic(err error) {
 	if err != nil {
-		log.Panicf("%s: %s", caller, err)
+		_, filepath, line, _ := runtime.Caller(1)
+		_, file := path.Split(filepath)
+		log.Panicf("[file:%s line:%d]: %s", file, line, err.Error())
 	}
 }
 
-func HandleError(caller string, err error, action int) bool {
+func HandleError(err error, action int) bool {
 	if err != nil {
+		_, filepath, line, _ := runtime.Caller(1)
+		_, file := path.Split(filepath)
 		switch action {
 		case ErrorActionErr:
-			log.Errorf("%s: %s", caller, err.Error())
+			log.Errorf("[file:%s line:%d]: %s", file, line, err.Error())
 			break
 		case ErrorActionWarn:
-			log.Warnf("%s: %s", caller, err.Error())
+			log.Warnf("[file:%s line:%d]: %s", file, line, err.Error())
 			break
 		case ErrorActionDebug:
-			log.Debugf("%s: %s", caller, err.Error())
+			log.Debugf("[file:%s line:%d]: %s", file, line, err.Error())
 			break
 		case ErrorActionInfo:
-			log.Infof("%s: %s", caller, err.Error())
+			log.Infof("[file:%s line:%d]: %s", file, line, err.Error())
 			break
 		}
 	}
 	return (err != nil)
-}
-
-func WriteJson(path string, data interface{}) error {
-	outfile, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer outfile.Close()
-	serial, err := json.MarshalIndent(&data, " ", " ")
-	if err != nil {
-		return err
-	}
-	_, err = outfile.WriteString(string(serial))
-	return err
-}
-
-func ReadJson(path string, data interface{}) error {
-	if _, err := os.Stat(path); err != nil {
-		return err
-	}
-	serial, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(serial, &data); err != nil {
-		return err
-	}
-	return nil
 }
 
 func WriteFile(filename string, source io.Reader) error {

@@ -75,7 +75,7 @@ func (connection *Connection) SetOnline(value bool) {
 
 func (connection *Connection) ConstructUrl(endpoint string) string {
 	urlStr, err := url.Parse(connection.Address + "/v" + version.GetMajor() + endpoint)
-	if utils.HandleError("connection/ConstructUrl()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return ""
 	}
 	return urlStr.String()
@@ -88,7 +88,7 @@ func (connection *Connection) SetRequestHeaders(request *http.Request) {
 
 func (connection *Connection) ConstructGetRequest(endpoint string, values map[string]string) *http.Request {
 	request, err := http.NewRequest("GET", connection.ConstructUrl(endpoint), nil)
-	if utils.HandleError("connection/ConstructGetRequest", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
 	connection.SetRequestHeaders(request)
@@ -102,11 +102,11 @@ func (connection *Connection) ConstructGetRequest(endpoint string, values map[st
 
 func (connection *Connection) ConstructPostRequest(endpoint string, data interface{}) *http.Request {
 	serial, err := json.Marshal(&data)
-	if utils.HandleError("connection/ConstructPostRequest()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
 	request, err := http.NewRequest("POST", connection.ConstructUrl(endpoint), bytes.NewBuffer(serial))
-	if utils.HandleError("connection/ConstructPostRequest()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
 	connection.SetRequestHeaders(request)

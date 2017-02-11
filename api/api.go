@@ -264,17 +264,17 @@ func StartHeartBeatTracker() {
 	log.Infof("Updating nodes status every %s", options.Config.HeartBeatTrackInterval)
 
 	interval, err := time.ParseDuration(options.Config.HeartBeatTrackInterval)
-	utils.HandlePanic("api/StartHeartBeatTracker()", err)
+	utils.HandlePanic(err)
 
 	cutoff, err := time.ParseDuration(options.Config.HeartBeatOffline)
-	utils.HandlePanic("api/StartHeartBeatTracker()", err)
+	utils.HandlePanic(err)
 
 	for {
 		time.Sleep(interval)
 		lock.RLock()
 		for uuid, node := range CurrentNodes {
 			then, err := time.Parse(time.RFC850, node.LastOnline)
-			utils.HandlePanic("api/StartHeartBeatTracker()", err)
+			utils.HandlePanic(err)
 			duration := time.Since(then)
 			if duration > cutoff && node.IsOnline == true {
 				log.Warnf("Node %s has not checked in since %s ago, marking offline", uuid, duration)

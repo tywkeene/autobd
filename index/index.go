@@ -38,7 +38,7 @@ type Index struct {
 func GetChecksum(path string) string {
 	defer utils.TimeTrack(time.Now(), "index/GetChecksum()")
 	file, err := os.Open(path)
-	if utils.HandleError("index/GetChecksum()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return ""
 	}
 	defer file.Close()
@@ -47,7 +47,7 @@ func GetChecksum(path string) string {
 	buf := bufio.NewReader(file)
 
 	_, err = buf.WriteTo(hash)
-	if utils.HandleError("index/GetChecksum()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return ""
 	}
 
@@ -95,7 +95,7 @@ func GenerateIndex(dirPath string) (map[string]*Index, error) {
 func GetIndex(dirPath string) (map[string]*Index, error) {
 	defer utils.TimeTrack(time.Now(), "index/GetIndex()")
 	dirStat, err := os.Lstat(dirPath)
-	if utils.HandleError("index/GetIndex()", err, utils.ErrorActionErr) == true {
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil, err
 	}
 	if dirStat.IsDir() == false {
