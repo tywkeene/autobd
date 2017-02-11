@@ -91,7 +91,7 @@ func (connection *Connection) ConstructGetRequest(endpoint string, values map[st
 	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
-	connection.SetRequestHeaders(request)
+	//connection.SetRequestHeaders(request)
 	query := request.URL.Query()
 	for name, value := range values {
 		query.Add(name, value)
@@ -109,7 +109,7 @@ func (connection *Connection) ConstructPostRequest(endpoint string, data interfa
 	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
-	connection.SetRequestHeaders(request)
+	//connection.SetRequestHeaders(request)
 	request.Header.Set("Content-Type", "application/json")
 	return request
 }
@@ -207,7 +207,7 @@ func (connection *Connection) IdentifyWithServer(version string, uuid string) ([
 		Version: version,
 		UUID:    uuid,
 	}
-	return connection.Post("/identify", metaData)
+	return connection.Post("/identify", &metaData)
 }
 
 //Send a heartbeat to a server, updating the node's synced status
@@ -216,7 +216,7 @@ func (connection *Connection) SendHeartbeat(uuid string) ([]byte, error) {
 		UUID:   uuid,
 		Synced: strconv.FormatBool(connection.Synced),
 	}
-	return connection.Post("/heartbeat", heartbeat)
+	return connection.Post("/heartbeat", &heartbeat)
 }
 
 func (connection *Connection) GetNodes(uuid string) ([]byte, error) {

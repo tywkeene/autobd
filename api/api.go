@@ -103,8 +103,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 
 	uuid := GetQueryValue("uuid", w, r)
 	if validateNode(uuid) == false || uuid == "" {
-		errHandle.Handle(fmt.Errorf("Invalid node UUID"),
-			http.StatusUnauthorized, utils.ErrorActionErr)
+		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 
@@ -285,17 +284,6 @@ func StartHeartBeatTracker() {
 	}
 }
 
-func GetPostData(r *http.Request, data interface{}) error {
-	serial, err := ioutil.ReadAll(r.Body)
-	if err == nil {
-		return err
-	}
-	if err := json.Unmarshal(serial, &data); err != nil {
-		return err
-	}
-	return nil
-}
-
 //Identify() is the http handler for the "/identify" API endpoint
 //It takes a node UUID and node version as json encoded strings
 //The node is added to the CurrentNodes map, with the RFC850 timestamp
@@ -304,10 +292,13 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	errHandle := utils.NewHttpErrorHandle("api/Identify()", w, r)
 	LogHttp(r)
 
+	serial, err := ioutil.ReadAll(r.Body)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
+		return
+	}
 	var metaData *NodeMetadata
-	err := GetPostData(r, &metaData)
-	if err != nil || metaData == nil {
-		errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr)
+	err = json.Unmarshal(serial, &metaData)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
 		return
 	}
 
@@ -319,7 +310,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 		go StartHeartBeatTracker()
 	}
 
-	//Handle to see if this node is already online
+	//Handle to see if this node is already tracked
 	if validateNode(metaData.UUID) == true {
 		node := GetNodeByUUID(metaData.UUID)
 		if node.IsOnline == false {
@@ -338,8 +329,8 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 			})
 		log.Printf("New node UUID:(%s) Address:[%s] Version:%s",
 			metaData.UUID, r.RemoteAddr, metaData.Version)
+		WriteNodeList(options.Config.NodeListFile)
 	}
-	WriteNodeList(options.Config.NodeListFile)
 }
 
 //HeartBeat() is the http handler for the "/heartbeat" API endpoint
@@ -349,10 +340,14 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/HeartBeat()")
 	errHandle := utils.NewHttpErrorHandle("api/HeartBeat()", w, r)
 	LogHttp(r)
+
+	serial, err := ioutil.ReadAll(r.Body)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
+		return
+	}
 	var heartbeat *NodeHeartbeat
-	err := GetPostData(r, &heartbeat)
-	if err != nil || heartbeat == nil {
-		errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr)
+	err = json.Unmarshal(serial, &heartbeat)
+	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
 		return
 	}
 	if validateNode(heartbeat.UUID) == false {

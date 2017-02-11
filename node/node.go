@@ -210,7 +210,7 @@ func (node *Node) Sync(server *connection.Connection) error {
 	if len(need) > 0 {
 		server.SetSynced(false)
 		for _, object := range need {
-			log.Printf("Need %s from %s", object.Name, server.Address)
+			log.Printf("%s -> Need:%s", server.Address, object.Name)
 			if object.IsDir == true {
 				err := server.RequestSyncDir(object.Name, node.UUID)
 				if utils.HandleError(err, utils.ErrorActionInfo) == true {
