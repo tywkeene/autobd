@@ -24,12 +24,12 @@ type Node struct {
 }
 
 var localNode *Node
-var nodeUseragent string = "Autobd-node/" + version.GetNodeVersion()
 
 func newNode(config options.NodeConf) *Node {
+	userAgent := "Autobd-node/" + version.GetNodeVersion()
 	servers := make(map[string]*connection.Connection, 0)
 	for _, url := range config.Servers {
-		servers[url] = connection.NewConnection(url)
+		servers[url] = connection.NewConnection(url, userAgent)
 	}
 	return &Node{Servers: servers, UUID: "", Config: config}
 }
@@ -97,7 +97,7 @@ func (node *Node) StartHeart() {
 				if server.Online == false {
 					continue
 				}
-				_, err := server.SendHeartbeat(node.UUID, nodeUseragent)
+				_, err := server.SendHeartbeat(node.UUID)
 				if utils.HandleError("node/StartHeart()", err, utils.ErrorActionErr) == true {
 					server.MissedBeats++
 					if server.MissedBeats == node.Config.MaxMissedBeats {
@@ -120,7 +120,7 @@ func (node *Node) CountOnlineServers() int {
 	return count
 }
 
-func (node *Node) ValidateAndIdentifyWithServers() error {
+func (node *Node) Identify() error {
 	for _, server := range node.Servers {
 		serial, err := server.RequestVersion()
 		if err != nil {
@@ -136,8 +136,8 @@ func (node *Node) ValidateAndIdentifyWithServers() error {
 				return err
 			}
 		}
-		_, err = server.IdentifyWithServer(node.UUID, nodeUseragent)
-		if utils.HandleError("node/ValidateAndIdentifyWithServers", err, utils.ErrorActionErr) == true {
+		_, err = server.IdentifyWithServer(version.GetNodeVersion(), node.UUID)
+		if utils.HandleError("node/Identify()", err, utils.ErrorActionErr) == true {
 			continue
 		}
 	}
@@ -173,8 +173,8 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 }
 
 //Compare a local and remote index, return a slice of needed indexes (or nil)
-func (node *Node) CompareIndex(target string, uuid string, userAgent string, server *connection.Connection) ([]*index.Index, error) {
-	serial, err := server.RequestIndex(target, uuid, userAgent)
+func (node *Node) CompareIndex(target string, uuid string, server *connection.Connection) ([]*index.Index, error) {
+	serial, err := server.RequestIndex(target, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (node *Node) IsSynced() bool {
 }
 
 func (node *Node) Sync(server *connection.Connection) error {
-	need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, nodeUseragent, server)
+	need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, server)
 	if err != nil {
 		return err
 	}
@@ -212,15 +212,15 @@ func (node *Node) Sync(server *connection.Connection) error {
 		for _, object := range need {
 			log.Printf("Need %s from %s", object.Name, server.Address)
 			if object.IsDir == true {
-				err := server.RequestSyncDir(object.Name, node.UUID, nodeUseragent)
-				if utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo) == true {
+				err := server.RequestSyncDir(object.Name, node.UUID)
+				if utils.HandleError("node/Sync()", err, utils.ErrorActionInfo) == true {
 					continue
 				}
 			} else if object.IsDir == false {
-				err := server.RequestSyncFile(object.Name, node.UUID, nodeUseragent)
+				err := server.RequestSyncFile(object.Name, node.UUID)
 				if err != nil {
 					//EOF just means the sync is finished, don't log an error
-					utils.HandleError("node/SyncUp()", err, utils.ErrorActionInfo)
+					utils.HandleError("node/Sync()", err, utils.ErrorActionInfo)
 					continue
 				}
 			}
@@ -232,8 +232,9 @@ func (node *Node) Sync(server *connection.Connection) error {
 }
 
 func (node *Node) UpdateLoop() error {
-	err := node.ValidateAndIdentifyWithServers()
-	utils.HandlePanic("node/UpdateLoop", err)
+	err := node.Identify()
+	utils.HandlePanic("node/UpdateLoop()", err)
+
 	log.Printf("Running as a node. Updating every %s with %s",
 		node.Config.UpdateInterval, node.Config.Servers)
 

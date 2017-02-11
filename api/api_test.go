@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/index"
@@ -10,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -78,7 +80,16 @@ func TestServeIndexNoDir(t *testing.T) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
+	api.AddNode("testing", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test",
+			Version: "0.0.0",
+		},
+	})
 
 	req, err := http.NewRequest("GET", "/index?uuid=testing", nil)
 	if err != nil {
@@ -106,7 +117,16 @@ func TestServeIndex(t *testing.T) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
+	api.AddNode("testing", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test",
+			Version: "0.0.0",
+		},
+	})
 
 	req, err := http.NewRequest("GET", "/index?dir=/&uuid=testing", nil)
 	if err != nil {
@@ -145,7 +165,16 @@ func BenchmarkServeIndex(b *testing.B) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
+	api.AddNode("testing", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test",
+			Version: "0.0.0",
+		},
+	})
 
 	req, err := http.NewRequest("GET", "/index?dir=/&uuid=testing", nil)
 	if err != nil {
@@ -158,7 +187,6 @@ func BenchmarkServeIndex(b *testing.B) {
 
 //Ensure we can get a version from the server
 func TestServeServerVer(t *testing.T) {
-	//TODO: Figure out how to actually set the version from here so we can test this properly
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.ServeServerVer)
 
@@ -176,11 +204,19 @@ func TestServeServerVer(t *testing.T) {
 
 //Ensure we get content when trying to sync a file
 func TestServeSync(t *testing.T) {
-	//TODO: Add checksum and other file-metadata verification
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.ServeSync)
 
-	api.AddNode("testing", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
+	api.AddNode("testing", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test",
+			Version: "0.0.0",
+		},
+	})
 
 	req, err := http.NewRequest("GET", "/sync?grab=api.go&uuid=testing", nil)
 	if err != nil {
@@ -201,13 +237,48 @@ func TestServeSync(t *testing.T) {
 func TestListNodes(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.ListNodes)
+	api.AddNode("test0", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test0",
+			Version: "0.0.0",
+		},
+	})
+	api.AddNode("test1", &api.Node{
+		Address:    "0.0.0.1",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test1",
+			Version: "0.0.0",
+		},
+	})
+	api.AddNode("test2", &api.Node{
+		Address:    "0.0.0.2",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test2",
+			Version: "0.0.0",
+		},
+	})
+	api.AddNode("test3", &api.Node{
+		Address:    "0.0.0.3",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test3",
+			Version: "0.0.0",
+		},
+	})
 
-	api.AddNode("testing0", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
-	api.AddNode("testing1", &api.Node{"0.0.0.1", "0.0.0", time.Now().Format(time.RFC850), true, false})
-	api.AddNode("testing2", &api.Node{"0.0.0.2", "0.0.0", time.Now().Format(time.RFC850), true, false})
-	api.AddNode("testing3", &api.Node{"0.0.0.3", "0.0.0", time.Now().Format(time.RFC850), true, false})
-
-	req, err := http.NewRequest("GET", "/nodes?uuid=testing0", nil)
+	req, err := http.NewRequest("GET", "/nodes?uuid=test0", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,19 +310,29 @@ func TestIdentify(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.Identify)
 
-	req, err := http.NewRequest("GET", "/identify?uuid=testing&version=testing", nil)
+	api.CurrentNodes = nil
+
+	serial, err := json.Marshal(&api.NodeMetadata{
+		Version: "0.0.0",
+		UUID:    "test",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	req, err := http.NewRequest("POST", "/identify", bytes.NewBuffer(serial))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
 	handler.ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+		t.Fatal("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	if api.GetNodeByUUID("testing") == nil {
-		t.Errorf("Node was not properly registered")
+	if api.GetNodeByUUID("test") == nil {
+		t.Fatal("Node was not properly registered")
 	}
 }
 
@@ -260,9 +341,27 @@ func TestHeartBeat(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.HeartBeat)
 
-	api.AddNode("testing", &api.Node{"0.0.0.0", "0.0.0", time.Now().Format(time.RFC850), true, false})
+	api.AddNode("test", &api.Node{
+		Address:    "0.0.0.0",
+		LastOnline: time.Now().Format(time.RFC850),
+		IsOnline:   true,
+		Synced:     false,
+		Meta: &api.NodeMetadata{
+			UUID:    "test",
+			Version: "0.0.0",
+		},
+	})
+	heartbeat := &api.NodeHeartbeat{
+		UUID:   "test",
+		Synced: strconv.FormatBool(true),
+	}
 
-	req, err := http.NewRequest("GET", "/heartbeat?uuid=testing&synced=true", nil)
+	serial, err := json.Marshal(&heartbeat)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest("POST", "/heartbeat", bytes.NewBuffer(serial))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +371,7 @@ func TestHeartBeat(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
-	if api.GetNodeByUUID("testing").Synced != true {
+	if api.GetNodeByUUID("test").Synced == false {
 		t.Errorf("Node was not updated")
 	}
 }

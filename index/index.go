@@ -75,7 +75,7 @@ func GenerateIndex(dirPath string) (map[string]*Index, error) {
 	}
 	index := make(map[string]*Index)
 	for _, child := range list {
-		if child.Name() == options.Config.NodeMetadataFile {
+		if child.Name() == options.Config.NodeListFile {
 			continue
 		}
 		childPath := path.Join(dirPath, child.Name())

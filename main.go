@@ -36,7 +36,7 @@ func init() {
 
 	if options.Config.RunNode == false {
 		api.SetupRoutes()
-		err := api.ReadNodeMetadata(options.Config.NodeMetadataFile)
+		err := api.ReadNodeList(options.Config.NodeListFile)
 		utils.HandleError("main.go/init()", err, utils.ErrorActionWarn)
 	}
 }

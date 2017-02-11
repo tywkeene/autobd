@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
@@ -24,10 +26,11 @@ type Connection struct {
 	MissedBeats int          //How many heartbeats the server has missed
 	Online      bool         //Is this server online
 	Synced      bool         //Is the node synced with this server?
+	UserAgent   string       //The useragent the node will send to this server
 	client      *http.Client //connection configuration for this server
 }
 
-func NewConnection(address string) *Connection {
+func NewConnection(address string, userAgent string) *Connection {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -37,6 +40,7 @@ func NewConnection(address string) *Connection {
 		MissedBeats: 0,
 		Online:      true,
 		Synced:      false,
+		UserAgent:   userAgent,
 		client:      connection,
 	}
 }
@@ -77,17 +81,36 @@ func (connection *Connection) ConstructUrl(endpoint string) string {
 	return urlStr.String()
 }
 
-func (connection *Connection) ConstructRequest(endpoint string, values map[string]string) *http.Request {
+func (connection *Connection) SetRequestHeaders(request *http.Request) {
+	request.Header.Set("Accept-Encoding", "application/x-gzip")
+	request.Header.Set("User-Agent", connection.UserAgent)
+}
+
+func (connection *Connection) ConstructGetRequest(endpoint string, values map[string]string) *http.Request {
 	request, err := http.NewRequest("GET", connection.ConstructUrl(endpoint), nil)
-	if utils.HandleError("connection/ConstructRequest", err, utils.ErrorActionErr) == true {
+	if utils.HandleError("connection/ConstructGetRequest", err, utils.ErrorActionErr) == true {
 		return nil
 	}
-
+	connection.SetRequestHeaders(request)
 	query := request.URL.Query()
 	for name, value := range values {
 		query.Add(name, value)
 	}
 	request.URL.RawQuery = query.Encode()
+	return request
+}
+
+func (connection *Connection) ConstructPostRequest(endpoint string, data interface{}) *http.Request {
+	serial, err := json.Marshal(&data)
+	if utils.HandleError("connection/ConstructPostRequest()", err, utils.ErrorActionErr) == true {
+		return nil
+	}
+	request, err := http.NewRequest("POST", connection.ConstructUrl(endpoint), bytes.NewBuffer(serial))
+	if utils.HandleError("connection/ConstructPostRequest()", err, utils.ErrorActionErr) == true {
+		return nil
+	}
+	connection.SetRequestHeaders(request)
+	request.Header.Set("Content-Type", "application/json")
 	return request
 }
 
@@ -108,10 +131,17 @@ func InflateResponse(resp *http.Response) ([]byte, error) {
 
 //HTTP GET with autobd specific headers set, returns a gzip reader if the response is
 //gzipped, a normal response body otherwise
-func (connection *Connection) Get(endpoint string, queryValues map[string]string, userAgent string) ([]byte, error) {
-	request := connection.ConstructRequest(endpoint, queryValues)
-	request.Header.Set("Accept-Encoding", "application/x-gzip")
-	request.Header.Set("User-Agent", userAgent)
+func (connection *Connection) Get(endpoint string, queryValues map[string]string) ([]byte, error) {
+	request := connection.ConstructGetRequest(endpoint, queryValues)
+	response, err := connection.client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	return InflateResponse(response)
+}
+
+func (connection *Connection) Post(endpoint string, data interface{}) ([]byte, error) {
+	request := connection.ConstructPostRequest(endpoint, data)
 	response, err := connection.client.Do(request)
 	if err != nil {
 		return nil, err
@@ -128,18 +158,18 @@ func (connection *Connection) RequestVersion() ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func (connection *Connection) RequestIndex(dir string, uuid string, userAgent string) ([]byte, error) {
+func (connection *Connection) RequestIndex(dir string, uuid string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["dir"] = dir
 	queryValues["uuid"] = uuid
-	return connection.Get("/index", queryValues, userAgent)
+	return connection.Get("/index", queryValues)
 }
 
-func (connection *Connection) RequestSyncDir(dir string, uuid string, userAgent string) error {
+func (connection *Connection) RequestSyncDir(dir string, uuid string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = dir
 	queryValues["uuid"] = uuid
-	buffer, err := connection.Get("/sync", queryValues, userAgent)
+	buffer, err := connection.Get("/sync", queryValues)
 	if err != nil {
 		return err
 	}
@@ -159,11 +189,11 @@ func (connection *Connection) RequestSyncDir(dir string, uuid string, userAgent 
 	return utils.WriteFile(dir, reader)
 }
 
-func (connection *Connection) RequestSyncFile(file string, uuid string, userAgent string) error {
+func (connection *Connection) RequestSyncFile(file string, uuid string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = file
 	queryValues["uuid"] = uuid
-	buffer, err := connection.Get("/sync", queryValues, userAgent)
+	buffer, err := connection.Get("/sync", queryValues)
 	if err != nil {
 		return err
 	}
@@ -172,23 +202,25 @@ func (connection *Connection) RequestSyncFile(file string, uuid string, userAgen
 }
 
 //Identify with a server and tell it the node's version and uuid
-func (connection *Connection) IdentifyWithServer(uuid string, userAgent string) ([]byte, error) {
-	queryValues := make(map[string]string)
-	queryValues["uuid"] = uuid
-	queryValues["version"] = version.GetNodeVersion()
-	return connection.Get("/identify", queryValues, userAgent)
+func (connection *Connection) IdentifyWithServer(version string, uuid string) ([]byte, error) {
+	metaData := &api.NodeMetadata{
+		Version: version,
+		UUID:    uuid,
+	}
+	return connection.Post("/identify", metaData)
 }
 
 //Send a heartbeat to a server, updating the node's synced status
-func (connection *Connection) SendHeartbeat(uuid string, userAgent string) ([]byte, error) {
-	queryValues := make(map[string]string)
-	queryValues["uuid"] = uuid
-	queryValues["synced"] = strconv.FormatBool(connection.Synced)
-	return connection.Get("/heartbeat", queryValues, userAgent)
+func (connection *Connection) SendHeartbeat(uuid string) ([]byte, error) {
+	heartbeat := &api.NodeHeartbeat{
+		UUID:   uuid,
+		Synced: strconv.FormatBool(connection.Synced),
+	}
+	return connection.Post("/heartbeat", heartbeat)
 }
 
-func (connection *Connection) GetNodes(uuid string, userAgent string) ([]byte, error) {
+func (connection *Connection) GetNodes(uuid string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid
-	return connection.Get("/nodes", queryValues, userAgent)
+	return connection.Get("/nodes", queryValues)
 }

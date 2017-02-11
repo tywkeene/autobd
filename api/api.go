@@ -24,18 +24,28 @@ import (
 	"time"
 )
 
-type Node struct {
-	Address    string `json:"address"`     //Address of the node
-	Version    string `json:"version"`     //Version of the node
-	LastOnline string `json:"last_online"` //Timestamp of when the node last sent a heartbeat
-	IsOnline   bool   `json:"is_online"`   //Is the node currently online?
-	Synced     bool   `json:"synced"`      //Is the node synced with this server?
+type NodeHeartbeat struct {
+	Synced string `json"synced"`
+	UUID   string `json:"UUID"`
 }
 
-type NodeMetadata map[string]*Node
+type NodeMetadata struct {
+	Version string `json:"version"`
+	UUID    string `json:"UUID"`
+}
+
+type Node struct {
+	Address    string        `json:"address"`     //Address of the node
+	LastOnline string        `json:"last_online"` //Timestamp of when the node last sent a heartbeat
+	IsOnline   bool          `json:"is_online"`   //Is the node currently online?
+	Synced     bool          `json:"synced"`      //Is the node synced with this server?
+	Meta       *NodeMetadata `json:"metadata"`    //Node Version, UUID and other misc. information about this node
+}
+
+type NodeList map[string]*Node
 
 //Currently registered nodes indexed by uuid
-var CurrentNodes NodeMetadata
+var CurrentNodes NodeList
 
 // For synchronized access to CurrentNodes
 var lock = sync.RWMutex{}
@@ -206,7 +216,7 @@ func validateNode(uuid string) bool {
 	return true
 }
 
-func ReadNodeMetadata(path string) error {
+func ReadNodeList(path string) error {
 	serial, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -217,7 +227,7 @@ func ReadNodeMetadata(path string) error {
 	return nil
 }
 
-func WriteNodeMetadata(path string) error {
+func WriteNodeList(path string) error {
 	outfile, err := os.Create(path)
 	if err != nil {
 		return err
@@ -275,14 +285,32 @@ func StartHeartBeatTracker() {
 	}
 }
 
+func GetPostData(r *http.Request, data interface{}) error {
+	serial, err := ioutil.ReadAll(r.Body)
+	if err == nil {
+		return err
+	}
+	if err := json.Unmarshal(serial, &data); err != nil {
+		return err
+	}
+	return nil
+}
+
 //Identify() is the http handler for the "/identify" API endpoint
 //It takes a node UUID and node version as json encoded strings
 //The node is added to the CurrentNodes map, with the RFC850 timestamp
 func Identify(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/Identify()")
+	errHandle := utils.NewHttpErrorHandle("api/Identify()", w, r)
 	LogHttp(r)
-	uuid := GetQueryValue("uuid", w, r)
-	version := GetQueryValue("version", w, r)
+
+	var metaData *NodeMetadata
+	err := GetPostData(r, &metaData)
+	if err != nil || metaData == nil {
+		errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr)
+		return
+	}
+
 	lock.RLock()
 	defer lock.RUnlock()
 	//Initialize the node list and start the heartbeat tracker
@@ -292,18 +320,26 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Handle to see if this node is already online
-	if validateNode(uuid) == true {
-		node := GetNodeByUUID(uuid)
+	if validateNode(metaData.UUID) == true {
+		node := GetNodeByUUID(metaData.UUID)
 		if node.IsOnline == false {
 			node.IsOnline = true
 		}
-		log.Printf("Node (%s) came back online", uuid)
+		log.Printf("Node (%s) came back online", metaData.UUID)
 	} else {
 		//Otherwise it's new, so add it to the list
-		AddNode(uuid, &Node{r.RemoteAddr, version, time.Now().Format(time.RFC850), true, false})
-		log.Printf("New node UUID: %s Address: %s Version: %s", uuid, r.RemoteAddr, version)
+		AddNode(metaData.UUID,
+			&Node{
+				Address:    r.RemoteAddr,
+				LastOnline: time.Now().Format(time.RFC850),
+				IsOnline:   true,
+				Synced:     false,
+				Meta:       metaData,
+			})
+		log.Printf("New node UUID:(%s) Address:[%s] Version:%s",
+			metaData.UUID, r.RemoteAddr, metaData.Version)
 	}
-	WriteNodeMetadata(options.Config.NodeMetadataFile)
+	WriteNodeList(options.Config.NodeListFile)
 }
 
 //HeartBeat() is the http handler for the "/heartbeat" API endpoint
@@ -313,14 +349,18 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/HeartBeat()")
 	errHandle := utils.NewHttpErrorHandle("api/HeartBeat()", w, r)
 	LogHttp(r)
-	uuid := GetQueryValue("uuid", w, r)
-	nodeSyncedStatus := GetQueryValue("synced", w, r)
-	if validateNode(uuid) == false {
+	var heartbeat *NodeHeartbeat
+	err := GetPostData(r, &heartbeat)
+	if err != nil || heartbeat == nil {
+		errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr)
+		return
+	}
+	if validateNode(heartbeat.UUID) == false {
 		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
-	synced, _ := strconv.ParseBool(nodeSyncedStatus)
-	updateNodeStatus(uuid, true, synced)
+	synced, _ := strconv.ParseBool(heartbeat.Synced)
+	updateNodeStatus(heartbeat.UUID, true, synced)
 }
 
 func SetupRoutes() {

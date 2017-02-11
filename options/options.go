@@ -19,7 +19,7 @@ type NodeConf struct {
 
 type Conf struct {
 	Root                   string   `toml:"root_dir"`
-	NodeMetadataFile       string   `toml:"node_metadata_file"`
+	NodeListFile           string   `toml:"node_list_file"`
 	ApiPort                string   `toml:"api_port"`
 	RunNode                bool     `toml:"run_as_node"`
 	NodeConfig             NodeConf `toml:"node"`
@@ -50,7 +50,7 @@ func GetOptions() {
 	flag.StringVar(&Config.CliConfigPath, "cli-config", "etc/config.toml.cli", "Path to the command line configuration file")
 
 	//Server command line flags
-	flag.StringVar(&Config.NodeMetadataFile, "node-list-file", "", "Where to store node metadata file")
+	flag.StringVar(&Config.NodeListFile, "node-list-file", "", "Where to store the server's node list file")
 	flag.StringVar(&Config.Root, "root", "", "Root directory to serve (required). Must be absolute path")
 	flag.StringVar(&Config.ApiPort, "api-port", "8081", "Port that the API listens on")
 	flag.StringVar(&Config.Cert, "tls-cert", "", "Path to TLS certificate to use")
