@@ -7,7 +7,7 @@ import (
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
-	"io"
+	"github.com/tywkeene/autobd/utils"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,8 +16,8 @@ import (
 	"time"
 )
 
-func getResponseFromBody(t *testing.T, body io.Reader) string {
-	buffer, err := ioutil.ReadAll(body)
+func getResponseFromBody(t *testing.T, recorder *httptest.ResponseRecorder) string {
+	buffer, err := ioutil.ReadAll(recorder.Body)
 	var response string
 	if err = json.Unmarshal(buffer, &response); err != nil {
 		t.Fatal(err)
@@ -61,12 +61,20 @@ func TestServeIndexNoUUID(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 
 	if recorder.Code != http.StatusUnauthorized {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Fatalf("handler returned wrong status code: got %v want %v",
 			recorder.Code, http.StatusUnauthorized)
 	}
-	expected := "Invalid node UUID"
-	response := getResponseFromBody(t, recorder.Body)
-	if response != expected {
+	expected := &utils.APIError{
+		ErrorMessage: "Invalid node UUID",
+		HTTPStatus:   http.StatusUnauthorized,
+	}
+	var response *utils.APIError
+	buffer, err := ioutil.ReadAll(recorder.Body)
+	if err = json.Unmarshal(buffer, &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.ErrorMessage != expected.ErrorMessage ||
+		response.HTTPStatus != expected.HTTPStatus {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			recorder.Body.String(), expected)
 	}
@@ -80,7 +88,7 @@ func TestServeIndexNoDir(t *testing.T) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{
+	api.AddNode("test", &api.Node{
 		Address:    "0.0.0.0",
 		LastOnline: time.Now().Format(time.RFC850),
 		IsOnline:   true,
@@ -91,19 +99,31 @@ func TestServeIndexNoDir(t *testing.T) {
 		},
 	})
 
-	req, err := http.NewRequest("GET", "/index?uuid=testing", nil)
+	req, err := http.NewRequest("GET", "/index?uuid=test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	handler.ServeHTTP(recorder, req)
 
 	if recorder.Code != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Fatalf("handler returned wrong status code: got %v want %v",
 			recorder.Code, http.StatusBadRequest)
 	}
-	expected := "Must specify directory"
-	response := getResponseFromBody(t, recorder.Body)
-	if response != expected {
+	expected := &utils.APIError{
+		ErrorMessage: "Must specify directory",
+		HTTPStatus:   http.StatusBadRequest,
+	}
+	var response *utils.APIError
+	buffer, err := ioutil.ReadAll(recorder.Body)
+	if err = json.Unmarshal(buffer, &response); err != nil {
+		t.Fatal(err)
+	}
+
+	if response == nil {
+		t.Errorf("empty response from server")
+	}
+	if response.ErrorMessage != expected.ErrorMessage ||
+		response.HTTPStatus != expected.HTTPStatus {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			response, expected)
 	}
@@ -117,7 +137,7 @@ func TestServeIndex(t *testing.T) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{
+	api.AddNode("test", &api.Node{
 		Address:    "0.0.0.0",
 		LastOnline: time.Now().Format(time.RFC850),
 		IsOnline:   true,
@@ -128,7 +148,7 @@ func TestServeIndex(t *testing.T) {
 		},
 	})
 
-	req, err := http.NewRequest("GET", "/index?dir=/&uuid=testing", nil)
+	req, err := http.NewRequest("GET", "/index?dir=/&uuid=test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +185,7 @@ func BenchmarkServeIndex(b *testing.B) {
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
 
-	api.AddNode("testing", &api.Node{
+	api.AddNode("test", &api.Node{
 		Address:    "0.0.0.0",
 		LastOnline: time.Now().Format(time.RFC850),
 		IsOnline:   true,
@@ -176,7 +196,7 @@ func BenchmarkServeIndex(b *testing.B) {
 		},
 	})
 
-	req, err := http.NewRequest("GET", "/index?dir=/&uuid=testing", nil)
+	req, err := http.NewRequest("GET", "/index?dir=/&uuid=test", nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -207,7 +227,7 @@ func TestServeSync(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(api.ServeSync)
 
-	api.AddNode("testing", &api.Node{
+	api.AddNode("test", &api.Node{
 		Address:    "0.0.0.0",
 		LastOnline: time.Now().Format(time.RFC850),
 		IsOnline:   true,
@@ -218,7 +238,7 @@ func TestServeSync(t *testing.T) {
 		},
 	})
 
-	req, err := http.NewRequest("GET", "/sync?grab=api.go&uuid=testing", nil)
+	req, err := http.NewRequest("GET", "/sync?grab=api.go&uuid=test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
