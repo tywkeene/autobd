@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/node"
+	"github.com/tywkeene/autobd/nodelist"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
@@ -35,9 +36,13 @@ func init() {
 	utils.HandlePanic(err)
 
 	if options.Config.RunNode == false {
-		api.SetupRoutes()
-		err := api.ReadNodeList(options.Config.NodeListFile)
+		err := nodelist.ReadNodeList(options.Config.NodeListFile)
 		utils.HandleError(err, utils.ErrorActionWarn)
+
+		nodelist.InitializeNodeList()
+		go api.StartHeartBeatTracker()
+
+		api.SetupRoutes()
 	}
 }
 

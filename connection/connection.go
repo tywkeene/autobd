@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/tywkeene/autobd/api"
+	"github.com/tywkeene/autobd/nodelist"
 	"github.com/tywkeene/autobd/packing"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
@@ -230,7 +230,7 @@ func (connection *Connection) RequestSyncFile(file string, uuid string) error {
 
 //Identify with a server and tell it the node's version and uuid
 func (connection *Connection) IdentifyWithServer(version string, uuid string) ([]byte, error) {
-	metaData := &api.NodeMetadata{
+	metaData := &nodelist.NodeMetadata{
 		Version: version,
 		UUID:    uuid,
 	}
@@ -239,7 +239,7 @@ func (connection *Connection) IdentifyWithServer(version string, uuid string) ([
 
 //Send a heartbeat to a server, updating the node's synced status
 func (connection *Connection) SendHeartbeat(uuid string) ([]byte, error) {
-	heartbeat := &api.NodeHeartbeat{
+	heartbeat := &nodelist.NodeHeartbeat{
 		UUID:   uuid,
 		Synced: strconv.FormatBool(connection.Synced),
 	}
