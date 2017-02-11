@@ -1,7 +1,8 @@
 # Autobd's HTTP API
 
 # GET /version
-Description: Returns a JSON encoded structure describing the version of the autobd server. 
+### Description:
+Returns a JSON encoded structure describing the version of the autobd server. 
 Autobd nodes use this endpoint to ensure version equality with the server.
 
 ### Arguments:
@@ -23,7 +24,8 @@ https://host:8080/version
 - 200 OK: Call succeeded, returns expected json struct
 
 # GET /index
-Description: Returns a JSON encoded structure describing the files and directory tree on the server
+### Description:
+Returns a JSON encoded structure describing the files and directory tree on the server
 
 ### Arguments:
 
@@ -86,7 +88,8 @@ http://host:8080/v0/index?dir=/&uuid=a468d5d0-56b8-4b0d-be2f-08b7d612b055
 - 501 Unauthorized: UUID not found in node list or UUID not in request
 
 # GET /sync
-Description: Returns the requested file (gzip'd, if the node-side can handle it) or a directory, (tarballed and gzip'd if the node-side can handle it)
+### Description:
+Returns the requested file (gzip'd, if the node-side can handle it) or a directory, (tarballed and gzip'd if the node-side can handle it)
 
 
 ### Arguments: 
@@ -114,6 +117,11 @@ Contents of requested directory in gzip'd format
 - 400 Bad Request: Directory not found or directory not in request
 - 500 Internal Server Error: Error while processing server index or index request
 - 501 Unauthorized: UUID not found in node list or UUID not in request
+
+# GET /nodes
+
+### Description:
+Returns a list of nodes currently registered with the server and their metadata, encoded in json
 
 ### Example:
 ```
@@ -162,7 +170,8 @@ http://host:8080/v0/nodes?uuid=a468d5d0-56b8-4b0d-be2f-08b7d612b055
 
 
 # POST /heartbeat
-Description: Updates the node's status on the server
+### Description:
+Updates the node's status on the server
 
 ### Arguments:
 A NodeHeartbeat struct, populated with the node's UUID and synced status, encoded in json
@@ -180,7 +189,7 @@ Nothing
 - 500 Internal Server Error: Error while processing heartbeat request or error while updating node status
 - 501 Unauthorized: UUID in request not recognized by server, node status not updated
 
-## POST /identify
+# POST /identify
 
 ### Description:
 Allows nodes to identify and register a UUID and node version with a server
