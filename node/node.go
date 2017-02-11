@@ -173,14 +173,16 @@ func CompareDirs(local map[string]*index.Index, remote map[string]*index.Index) 
 }
 
 //Compare a local and remote index, return a slice of needed indexes (or nil)
-func (node *Node) CompareIndex(target string, uuid string, server *connection.Connection) ([]*index.Index, error) {
-	serial, err := server.RequestIndex(target, uuid)
-	if err != nil {
+func (node *Node) CompareIndex(target string, server *connection.Connection) ([]*index.Index, error) {
+	serial, err := server.RequestIndex(target, node.UUID)
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil, err
 	}
 	var remoteIndex map[string]*index.Index
 	if err := json.Unmarshal(serial, &remoteIndex); err != nil {
-		return nil, err
+		if utils.HandleError(err, utils.ErrorActionErr) == true {
+			return nil, err
+		}
 	}
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		os.Mkdir(target, 0755)
@@ -203,7 +205,7 @@ func (node *Node) IsSynced() bool {
 }
 
 func (node *Node) Sync(server *connection.Connection) error {
-	need, err := node.CompareIndex(node.Config.TargetDirectory, node.UUID, server)
+	need, err := node.CompareIndex(node.Config.TargetDirectory, server)
 	if err != nil {
 		return err
 	}

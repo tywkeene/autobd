@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/packing"
@@ -28,6 +29,23 @@ type Connection struct {
 	Synced      bool         //Is the node synced with this server?
 	UserAgent   string       //The useragent the node will send to this server
 	client      *http.Client //connection configuration for this server
+}
+
+func (connection *Connection) HandleAPIError(response *http.Response) error {
+	if response.StatusCode != http.StatusOK {
+		defer response.Body.Close()
+		buffer, err := InflateResponse(response)
+		if err != nil {
+			return err
+		}
+		var errData *utils.APIError
+		if err = json.Unmarshal(buffer, &errData); err != nil {
+			return err
+		}
+		return fmt.Errorf("Received error from [%s]->(HTTP Status:%d):%s",
+			connection.Address, errData.HTTPStatus, errData.ErrorMessage)
+	}
+	return nil
 }
 
 func NewConnection(address string, userAgent string) *Connection {
@@ -91,7 +109,7 @@ func (connection *Connection) ConstructGetRequest(endpoint string, values map[st
 	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
-	//connection.SetRequestHeaders(request)
+	connection.SetRequestHeaders(request)
 	query := request.URL.Query()
 	for name, value := range values {
 		query.Add(name, value)
@@ -109,7 +127,7 @@ func (connection *Connection) ConstructPostRequest(endpoint string, data interfa
 	if utils.HandleError(err, utils.ErrorActionErr) == true {
 		return nil
 	}
-	//connection.SetRequestHeaders(request)
+	connection.SetRequestHeaders(request)
 	request.Header.Set("Content-Type", "application/json")
 	return request
 }
@@ -137,6 +155,9 @@ func (connection *Connection) Get(endpoint string, queryValues map[string]string
 	if err != nil {
 		return nil, err
 	}
+	if err := connection.HandleAPIError(response); err != nil {
+		return nil, err
+	}
 	return InflateResponse(response)
 }
 
@@ -144,6 +165,9 @@ func (connection *Connection) Post(endpoint string, data interface{}) ([]byte, e
 	request := connection.ConstructPostRequest(endpoint, data)
 	response, err := connection.client.Do(request)
 	if err != nil {
+		return nil, err
+	}
+	if err := connection.HandleAPIError(response); err != nil {
 		return nil, err
 	}
 	return InflateResponse(response)
@@ -154,7 +178,6 @@ func (connection *Connection) RequestVersion() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
 }
 
@@ -162,7 +185,11 @@ func (connection *Connection) RequestIndex(dir string, uuid string) ([]byte, err
 	queryValues := make(map[string]string)
 	queryValues["dir"] = dir
 	queryValues["uuid"] = uuid
-	return connection.Get("/index", queryValues)
+	response, err := connection.Get("/index", queryValues)
+	if err != nil {
+		panic(err)
+	}
+	return response, err
 }
 
 func (connection *Connection) RequestSyncDir(dir string, uuid string) error {

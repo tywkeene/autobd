@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+type APIError struct {
+	ErrorMessage string `json:"error_message"`
+	HTTPStatus   int    `json:"http_status"`
+}
+
 type HttpErrorHandler struct {
 	Caller   string
 	Response http.ResponseWriter
@@ -29,7 +34,6 @@ func NewHttpErrorHandle(caller string, response http.ResponseWriter, request *ht
 	return &HttpErrorHandler{caller, response, request}
 }
 
-// h.Handle checks the err in h *HttpHandleError, if there is an error, the error is logged in
 // HandleError locally, according to the action passed to h.Handle, and then serialized
 // in json and sent to the remote address via http, then returns true.
 // Otherwise, if there is no error, h.Handle returns false
@@ -38,8 +42,14 @@ func (h *HttpErrorHandler) Handle(err error, httpStatus int, action int) bool {
 		_, filepath, line, _ := runtime.Caller(1)
 		_, file := path.Split(filepath)
 		log.Errorf("HttpErrorHandler()->[file:%s line:%d]: %s", file, line, err.Error())
-		serialErr, _ := json.Marshal(err.Error())
-		http.Error(h.Response, string(serialErr), httpStatus)
+		apiErr := &APIError{
+			ErrorMessage: err.Error(),
+			HTTPStatus:   httpStatus,
+		}
+		serialErr, _ := json.Marshal(&apiErr)
+		h.Response.Header().Set("Content-Type", "application/json")
+		h.Response.WriteHeader(httpStatus)
+		io.WriteString(h.Response, string(serialErr))
 	}
 	return (err != nil)
 }
