@@ -82,7 +82,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
+	w.Header().Set("Server", "Autobd v"+version.GetVersion())
 	io.WriteString(w, string(serial))
 }
 
@@ -94,7 +94,7 @@ func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	serialVer := version.JSON()
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.GetAPIVersion())
+	w.Header().Set("Server", "Autobd v"+version.GetVersion())
 	io.WriteString(w, string(serialVer))
 }
 

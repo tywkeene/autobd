@@ -14,19 +14,8 @@ import (
 	"runtime"
 )
 
-var (
-	CommitHash string
-	APIVer     string
-	NodeVer    string
-)
-
 func init() {
 	options.GetOptions()
-	version.Set(CommitHash, APIVer, NodeVer)
-	if options.Config.VersionJSON == true {
-		fmt.Println(version.JSON())
-		os.Exit(0)
-	}
 	version.Print()
 	if options.Config.Version == true {
 		os.Exit(0)

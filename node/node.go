@@ -26,7 +26,7 @@ type Node struct {
 var localNode *Node
 
 func newNode(config options.NodeConf) *Node {
-	userAgent := "Autobd-node/" + version.GetNodeVersion()
+	userAgent := "Autobd-node/" + version.GetVersion()
 	servers := make(map[string]*connection.Connection, 0)
 	for _, url := range config.Servers {
 		servers[url] = connection.NewConnection(url, userAgent)
@@ -75,11 +75,7 @@ func (node *Node) ReadNodeUUID() error {
 }
 
 func (node *Node) validateServerVersion(remote *version.VersionInfo) error {
-	if version.GetAPIVersion() != remote.APIVersion {
-		return fmt.Errorf("Mismatched version with server. Server: %s Local: %s",
-			remote.APIVersion, version.GetAPIVersion())
-	}
-	remoteMajor := strings.Split(remote.APIVersion, ".")[0]
+	remoteMajor := strings.Split(remote.Version, ".")[0]
 	if version.GetMajor() != remoteMajor {
 		return fmt.Errorf("Mismatched API version with server. Server: %s Local: %s",
 			remoteMajor, version.GetMajor())
@@ -131,12 +127,14 @@ func (node *Node) Identify() error {
 			return err
 		}
 
-		if options.Config.NodeConfig.IgnoreVersionMismatch == false {
-			if err := node.validateServerVersion(remoteVer); err != nil {
+		if err := node.validateServerVersion(remoteVer); err != nil {
+			if options.Config.NodeConfig.IgnoreVersionMismatch == false {
+				log.Warnf("Server (%s) is running a different API version. Some functionality may be broken!\n",
+					server.Address)
 				return err
 			}
 		}
-		_, err = server.IdentifyWithServer(version.GetNodeVersion(), node.UUID)
+		_, err = server.IdentifyWithServer(version.GetVersion(), node.UUID)
 		if utils.HandleError(err, utils.ErrorActionErr) == true {
 			continue
 		}
