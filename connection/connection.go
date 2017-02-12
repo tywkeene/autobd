@@ -31,8 +31,8 @@ type Connection struct {
 	client      *http.Client //connection configuration for this server
 }
 
-func (connection *Connection) HandleAPIError(response *http.Response) error {
-	if response.StatusCode != http.StatusOK {
+func (connection *Connection) HandleAPIError(response *http.Response, expectStatus int) error {
+	if response.StatusCode != expectStatus {
 		defer response.Body.Close()
 		buffer, err := InflateResponse(response)
 		if err != nil {
@@ -42,8 +42,8 @@ func (connection *Connection) HandleAPIError(response *http.Response) error {
 		if err = json.Unmarshal(buffer, &errData); err != nil {
 			return err
 		}
-		return fmt.Errorf("Received error from [%s]->(HTTP Status:%d):%s",
-			connection.Address, errData.HTTPStatus, errData.ErrorMessage)
+		return fmt.Errorf("Error [%s]->(HTTP %d %s): %s",
+			connection.Address, errData.HTTPStatus, http.StatusText(errData.HTTPStatus), errData.ErrorMessage)
 	}
 	return nil
 }
@@ -149,25 +149,25 @@ func InflateResponse(resp *http.Response) ([]byte, error) {
 
 //HTTP GET with autobd specific headers set, returns a gzip reader if the response is
 //gzipped, a normal response body otherwise
-func (connection *Connection) Get(endpoint string, queryValues map[string]string) ([]byte, error) {
+func (connection *Connection) Get(endpoint string, expectStatus int, queryValues map[string]string) ([]byte, error) {
 	request := connection.ConstructGetRequest(endpoint, queryValues)
 	response, err := connection.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
-	if err := connection.HandleAPIError(response); err != nil {
+	if err := connection.HandleAPIError(response, expectStatus); err != nil {
 		return nil, err
 	}
 	return InflateResponse(response)
 }
 
-func (connection *Connection) Post(endpoint string, data interface{}) ([]byte, error) {
+func (connection *Connection) Post(endpoint string, expectStatus int, data interface{}) ([]byte, error) {
 	request := connection.ConstructPostRequest(endpoint, data)
 	response, err := connection.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
-	if err := connection.HandleAPIError(response); err != nil {
+	if err := connection.HandleAPIError(response, expectStatus); err != nil {
 		return nil, err
 	}
 	return InflateResponse(response)
@@ -185,7 +185,7 @@ func (connection *Connection) RequestIndex(dir string, uuid string) ([]byte, err
 	queryValues := make(map[string]string)
 	queryValues["dir"] = dir
 	queryValues["uuid"] = uuid
-	response, err := connection.Get("/index", queryValues)
+	response, err := connection.Get("/index", http.StatusOK, queryValues)
 	if err != nil {
 		panic(err)
 	}
@@ -196,7 +196,7 @@ func (connection *Connection) RequestSyncDir(dir string, uuid string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = dir
 	queryValues["uuid"] = uuid
-	buffer, err := connection.Get("/sync", queryValues)
+	buffer, err := connection.Get("/sync", http.StatusOK, queryValues)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (connection *Connection) RequestSyncFile(file string, uuid string) error {
 	queryValues := make(map[string]string)
 	queryValues["grab"] = file
 	queryValues["uuid"] = uuid
-	buffer, err := connection.Get("/sync", queryValues)
+	buffer, err := connection.Get("/sync", http.StatusOK, queryValues)
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (connection *Connection) IdentifyWithServer(version string, uuid string) ([
 		Version: version,
 		UUID:    uuid,
 	}
-	return connection.Post("/identify", &metaData)
+	return connection.Post("/identify", http.StatusOK, &metaData)
 }
 
 //Send a heartbeat to a server, updating the node's synced status
@@ -243,11 +243,11 @@ func (connection *Connection) SendHeartbeat(uuid string) ([]byte, error) {
 		UUID:   uuid,
 		Synced: strconv.FormatBool(connection.Synced),
 	}
-	return connection.Post("/heartbeat", &heartbeat)
+	return connection.Post("/heartbeat", http.StatusOK, &heartbeat)
 }
 
 func (connection *Connection) GetNodes(uuid string) ([]byte, error) {
 	queryValues := make(map[string]string)
 	queryValues["uuid"] = uuid
-	return connection.Get("/nodes", queryValues)
+	return connection.Get("/nodes", http.StatusOK, queryValues)
 }

@@ -36,7 +36,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 //can, if not, simply use the normal http.ResponseWriter
 func GzipHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "application/x-gzip") {
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "application/x-gzip") == false {
 			fn(w, r)
 			return
 		}
@@ -52,6 +52,24 @@ func LogHttp(r *http.Request) {
 	log.Printf("%s %s %s %s", r.Method, r.URL, r.RemoteAddr, r.UserAgent())
 }
 
+//These headers should always be set
+func setDefaultResponseHeaders(response http.ResponseWriter) {
+	response.Header().Set("Connection", "close")
+	response.Header().Set("Server", "Autobd v"+version.GetVersion())
+}
+
+//Checks a request header and ensures it is allowed, otherwise it will set the Allow http header
+// and return HTTP 405 Method Not Allowed
+func validateRequestMethod(errHandle *utils.HttpErrorHandler, allowed string) bool {
+	if strings.Contains(allowed, errHandle.Request.Method) == false {
+		errHandle.Response.Header().Set("Allow", allowed)
+		setDefaultResponseHeaders(errHandle.Response)
+		errHandle.Handle(fmt.Errorf("Method not allowed"), http.StatusMethodNotAllowed, utils.ErrorActionErr)
+		return false
+	}
+	return true
+}
+
 //ServeIndex() is the http handler for the "/index" API endpoint.
 //It takes the requested directory passed as a url parameter "dir" i.e "/index?dir=/"
 //
@@ -61,6 +79,9 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ServeIndex()")
 	errHandle := utils.NewHttpErrorHandle("api/ServeIndex()", w, r)
 	LogHttp(r)
+	if validateRequestMethod(errHandle, "GET") == false {
+		return
+	}
 
 	uuid, err := nodelist.GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
@@ -82,7 +103,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	serial, _ := json.MarshalIndent(&dirIndex, "  ", "  ")
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.GetVersion())
+	setDefaultResponseHeaders(w)
 	io.WriteString(w, string(serial))
 }
 
@@ -91,10 +112,14 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 func ServeServerVer(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ServeServerVer()")
 	LogHttp(r)
+	errHandle := utils.NewHttpErrorHandle("api/ServeServerVer()", w, r)
+	if validateRequestMethod(errHandle, "GET") == false {
+		return
+	}
 	serialVer := version.JSON()
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server", "Autobd v"+version.GetVersion())
+	setDefaultResponseHeaders(w)
 	io.WriteString(w, string(serialVer))
 }
 
@@ -109,6 +134,9 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ServeSync()")
 	errHandle := utils.NewHttpErrorHandle("api/ServeSync()", w, r)
 	LogHttp(r)
+	if validateRequestMethod(errHandle, "GET") == false {
+		return
+	}
 	uuid, err := nodelist.GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
@@ -141,6 +169,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-tar")
 		return
 	}
+	setDefaultResponseHeaders(w)
 	http.ServeContent(w, r, grab, info.ModTime(), fd)
 	nodelist.UpdateNodeStatus(uuid, true, true)
 }
@@ -151,6 +180,9 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/ListNodes()")
 	errHandle := utils.NewHttpErrorHandle("api/ListNodes()", w, r)
 	LogHttp(r)
+	if validateRequestMethod(errHandle, "GET") == false {
+		return
+	}
 	uuid, err := nodelist.GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusUnauthorized, utils.ErrorActionErr) == true {
 		return
@@ -160,6 +192,8 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	nodeList := nodelist.GetNodelistJson()
+	w.WriteHeader(http.StatusOK)
+	setDefaultResponseHeaders(w)
 	io.WriteString(w, string(nodeList))
 }
 
@@ -184,6 +218,9 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/Identify()")
 	errHandle := utils.NewHttpErrorHandle("api/Identify()", w, r)
 	LogHttp(r)
+	if validateRequestMethod(errHandle, "POST") == false {
+		return
+	}
 
 	serial, err := ioutil.ReadAll(r.Body)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
@@ -194,16 +231,27 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
 		return
 	}
+	if metaData.UUID == "" || metaData.Version == "" {
+		errHandle.Handle(fmt.Errorf("Invalid or incomplete identify data"), http.StatusBadRequest, utils.ErrorActionErr)
+		return
+	}
 
 	nodelist.InitializeNodeList()
 
 	//Handle to see if this node is already tracked
 	if nodelist.ValidateNode(metaData.UUID) == true {
 		node := nodelist.GetNodeByUUID(metaData.UUID)
+		//Node was offline, but has come back
 		if node.IsOnline == false {
+			log.Printf("Node (%s) came back online", metaData.UUID)
 			node.IsOnline = true
+			w.WriteHeader(http.StatusOK)
+			return
+			//Node already exists, error out
+		} else if node.IsOnline == true {
+			errHandle.Handle(fmt.Errorf("Node already exists"), http.StatusConflict, utils.ErrorActionWarn)
+			return
 		}
-		log.Printf("Node (%s) came back online", metaData.UUID)
 	} else {
 		//Otherwise it's new, so add it to the list
 		nodelist.AddNode(metaData.UUID,
@@ -218,6 +266,8 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 			metaData.UUID, r.RemoteAddr, metaData.Version)
 		nodelist.WriteNodeList(options.Config.NodeListFile)
 	}
+	setDefaultResponseHeaders(w)
+	w.WriteHeader(http.StatusOK)
 }
 
 //HeartBeat() is the http handler for the "/heartbeat" API endpoint
@@ -227,6 +277,9 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	defer utils.TimeTrack(time.Now(), "api/HeartBeat()")
 	errHandle := utils.NewHttpErrorHandle("api/HeartBeat()", w, r)
 	LogHttp(r)
+	if validateRequestMethod(errHandle, "POST") == false {
+		return
+	}
 
 	serial, err := ioutil.ReadAll(r.Body)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
@@ -237,12 +290,18 @@ func HeartBeat(w http.ResponseWriter, r *http.Request) {
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
 		return
 	}
+	if heartbeat.UUID == "" || heartbeat.Synced == "" {
+		errHandle.Handle(fmt.Errorf("Invalid or incomplete heartbeat data"), http.StatusBadRequest, utils.ErrorActionErr)
+		return
+	}
 	if nodelist.ValidateNode(heartbeat.UUID) == false {
 		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
 	synced, _ := strconv.ParseBool(heartbeat.Synced)
 	nodelist.UpdateNodeStatus(heartbeat.UUID, true, synced)
+	setDefaultResponseHeaders(w)
+	w.WriteHeader(http.StatusOK)
 }
 
 func SetupRoutes() {
