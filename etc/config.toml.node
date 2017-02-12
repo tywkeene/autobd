@@ -1,13 +1,18 @@
-#Which directory to
-root_dir = "/home/autobd/data/"
+#Where our root directory is. The target directory is below this one.
+#Should probably be a full path
+root_dir = "/home/autobd/data"
 
 #Run as a node
 run_as_node = true
+
+#Enable or disable logging of utils/TimeTrack() (For benchmarking/debugging)
+log_timetrack = false
 
 [node]
 #What server to communicate with IP/URL
 #(required when running as a node)
 servers = ["http://172.18.0.2:8080"]
+
 
 #Don't fail if the node's version doesn't match the server's
 node_ignore_version_mismatch = false
@@ -22,7 +27,9 @@ heartbeat_interval = "15s"
 max_missed_beats = 3
 
 #Which directory on the node to sync
+#A server can watch a large directory tree. e.g a/(b,c,d,e}.
+#So if you want this node to only sync with a/d, you would change target_directory to ./d
 target_directory = "/"
 
-#Where to store the node uuid file
+#Where to store the node's uuid file
 uuid_path = ".uuid"

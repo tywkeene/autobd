@@ -11,7 +11,7 @@ use_ssl = false
 tls_cert = "/home/autobd/secret/cert.pem"
 
 #Path to the key associated with the TLS certificate used by the server
-tls_key= "/home/autobd/secret/key.pem"
+tls_key = "/home/autobd/secret/key.pem"
 
 #Run as a node
 run_as_node = false
@@ -28,7 +28,7 @@ heartbeat_tracker_interval = "30s"
 heartbeat_offline = "30s"
 
 #Where to store node metadata file
-node_metadata_file = ".node_metadata"
+node_list_file = ".nodes"
 
 #Enable or disable logging of utils/TimeTrack() (For benchmarking/debugging)
 log_timetrack = true
