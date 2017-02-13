@@ -243,7 +243,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) {
 		return
 	}
-	if metaData.UUID == "" || metaData.Version == "" {
+	if metaData.UUID == "" || metaData.Version == "" || metaData.Target == "" {
 		errHandle.Handle(fmt.Errorf("Invalid or incomplete identify data"), http.StatusBadRequest, utils.ErrorActionErr)
 		return
 	}

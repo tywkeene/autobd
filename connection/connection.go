@@ -230,10 +230,11 @@ func (connection *Connection) RequestSyncFile(file string, uuid string) error {
 }
 
 //Identify with a server and tell it the node's version and uuid
-func (connection *Connection) IdentifyWithServer(version string, uuid string) ([]byte, error) {
+func (connection *Connection) IdentifyWithServer(version string, uuid string, target string) ([]byte, error) {
 	metaData := &nodelist.NodeMetadata{
 		Version: version,
 		UUID:    uuid,
+		Target:  target,
 	}
 	return connection.Post("/identify", http.StatusOK, &metaData)
 }

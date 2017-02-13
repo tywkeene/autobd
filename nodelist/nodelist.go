@@ -19,6 +19,7 @@ type NodeHeartbeat struct {
 type NodeMetadata struct {
 	Version string `json:"version"`
 	UUID    string `json:"UUID"`
+	Target  string `json:"node_target_directory"`
 }
 
 type Node struct {

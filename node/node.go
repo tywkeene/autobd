@@ -134,7 +134,7 @@ func (node *Node) Identify() error {
 				return err
 			}
 		}
-		_, err = server.IdentifyWithServer(version.GetVersion(), node.UUID)
+		_, err = server.IdentifyWithServer(version.GetVersion(), node.UUID, options.Config.NodeConfig.TargetDirectory)
 		if utils.HandleError(err, utils.ErrorActionErr) == true {
 			continue
 		}
