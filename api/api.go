@@ -255,7 +255,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 		node := nodelist.GetNodeByUUID(metaData.UUID)
 		//Node was offline, but has come back
 		if node.IsOnline == false {
-			log.Info("Node (%s) came back online", node.ShortUUID())
+			log.Infof("Node (%s) came back online", node.ShortUUID())
 			node.IsOnline = true
 			//Node already exists, error out
 		} else if node.IsOnline == true {
