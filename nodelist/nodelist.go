@@ -6,8 +6,6 @@ import (
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/utils"
 	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -39,15 +37,8 @@ var CurrentNodes NodeList
 // For synchronized access to CurrentNodes
 var lock = sync.RWMutex{}
 
-//GetQueryValue() takes a name of a key:value pair to fetch from a URL encoded query,
-//a http.ResponseWriter 'w', and a http.Request 'r'. In the event that an error is encountered
-//the error will be returned to the client via logging facilities that use 'w' and 'r'
-func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) (string, error) {
-	query, err := url.ParseQuery(r.URL.RawQuery)
-	if query == nil || err != nil {
-		return "", err
-	}
-	return query.Get(name), nil
+func (node *Node) ShortUUID() string {
+	return node.Meta.UUID[:8]
 }
 
 //Add a node to the CurrentNodes map synchronously
@@ -127,6 +118,8 @@ func UpdateNodeList() {
 		if duration > cutoff && node.IsOnline == true {
 			log.Warnf("Node %s has not checked in since %s ago, marking offline", uuid, duration)
 			UpdateNodeStatus(uuid, false, node.Synced)
+			err := WriteNodeList(options.Config.NodeListFile)
+			utils.HandleError(err, utils.ErrorActionErr)
 		}
 	}
 }
@@ -134,7 +127,10 @@ func UpdateNodeList() {
 func GetNodelistJson() []byte {
 	lock.RLock()
 	defer lock.RUnlock()
-	serial, _ := json.MarshalIndent(&CurrentNodes, " ", " ")
+	serial, err := json.MarshalIndent(&CurrentNodes, " ", " ")
+	if utils.HandleError(err, utils.ErrorActionErr) == true {
+		return nil
+	}
 	return serial
 }
 

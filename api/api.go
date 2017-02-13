@@ -17,6 +17,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -70,6 +71,17 @@ func validateRequestMethod(errHandle *utils.HttpErrorHandler, allowed string) bo
 	return true
 }
 
+//GetQueryValue() takes a name of a key:value pair to fetch from a URL encoded query,
+//a http.ResponseWriter 'w', and a http.Request 'r'. In the event that an error is encountered
+//the error will be returned to the client via logging facilities that use 'w' and 'r'
+func GetQueryValue(name string, w http.ResponseWriter, r *http.Request) (string, error) {
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if query == nil || err != nil {
+		return "", err
+	}
+	return query.Get(name), nil
+}
+
 //ServeIndex() is the http handler for the "/index" API endpoint.
 //It takes the requested directory passed as a url parameter "dir" i.e "/index?dir=/"
 //
@@ -83,7 +95,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid, err := nodelist.GetQueryValue("uuid", w, r)
+	uuid, err := GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
@@ -92,7 +104,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dir, err := nodelist.GetQueryValue("dir", w, r)
+	dir, err := GetQueryValue("dir", w, r)
 	if dir == "" {
 		errHandle.Handle(fmt.Errorf("Must specify directory"), http.StatusBadRequest, utils.ErrorActionErr)
 		return
@@ -137,7 +149,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 	if validateRequestMethod(errHandle, "GET") == false {
 		return
 	}
-	uuid, err := nodelist.GetQueryValue("uuid", w, r)
+	uuid, err := GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
@@ -145,7 +157,7 @@ func ServeSync(w http.ResponseWriter, r *http.Request) {
 		errHandle.Handle(fmt.Errorf("Invalid node UUID"), http.StatusUnauthorized, utils.ErrorActionErr)
 		return
 	}
-	grab, err := nodelist.GetQueryValue("grab", w, r)
+	grab, err := GetQueryValue("grab", w, r)
 	if errHandle.Handle(err, http.StatusBadRequest, utils.ErrorActionErr) == true {
 		return
 	}
@@ -183,7 +195,7 @@ func ListNodes(w http.ResponseWriter, r *http.Request) {
 	if validateRequestMethod(errHandle, "GET") == false {
 		return
 	}
-	uuid, err := nodelist.GetQueryValue("uuid", w, r)
+	uuid, err := GetQueryValue("uuid", w, r)
 	if errHandle.Handle(err, http.StatusUnauthorized, utils.ErrorActionErr) == true {
 		return
 	}
@@ -243,12 +255,11 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 		node := nodelist.GetNodeByUUID(metaData.UUID)
 		//Node was offline, but has come back
 		if node.IsOnline == false {
-			log.Printf("Node (%s) came back online", metaData.UUID)
+			log.Info("Node (%s) came back online", node.ShortUUID())
 			node.IsOnline = true
-			w.WriteHeader(http.StatusOK)
-			return
 			//Node already exists, error out
 		} else if node.IsOnline == true {
+			log.Warnf("Node (%s) attempted to identify again", node.ShortUUID())
 			errHandle.Handle(fmt.Errorf("Node already exists"), http.StatusConflict, utils.ErrorActionWarn)
 			return
 		}
@@ -262,7 +273,7 @@ func Identify(w http.ResponseWriter, r *http.Request) {
 				Synced:     false,
 				Meta:       metaData,
 			})
-		log.Printf("New node UUID:(%s) Address:[%s] Version:%s",
+		log.Printf("Create node:(Full UUID:[%s] Address:[%s] Version:%s])",
 			metaData.UUID, r.RemoteAddr, metaData.Version)
 		nodelist.WriteNodeList(options.Config.NodeListFile)
 	}
