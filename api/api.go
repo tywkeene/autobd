@@ -55,7 +55,7 @@ func LogHttp(r *http.Request) {
 
 //These headers should always be set
 func setDefaultResponseHeaders(response http.ResponseWriter) {
-	response.Header().Set("Connection", "close")
+	response.Header().Set("Connection", "keep-alive")
 	response.Header().Set("Server", "Autobd v"+version.GetVersion())
 }
 

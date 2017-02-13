@@ -101,6 +101,7 @@ func (connection *Connection) ConstructUrl(endpoint string) string {
 
 func (connection *Connection) SetRequestHeaders(request *http.Request) {
 	request.Header.Set("Accept-Encoding", "application/x-gzip")
+	request.Header.Set("Connection", "keep-alive")
 	request.Header.Set("User-Agent", connection.UserAgent)
 }
 
