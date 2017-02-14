@@ -1,12 +1,11 @@
 # Major release
 Major version releases come from the feature-freeze branch, and are merged into master, **only** when API compatibility
-changes are made. Release candidates are drafted until it is believe the changes are stable, and can then be release and merged
-back into the master branch. The number of release candidates is unlimited (i.e until it's stable), but should probably be low.
+changes are made. Release candidates are drafted until it is believed the changes are stable, and can then be released and merged
+back into the master branch. The number of release candidates is unlimited (i.e until it's stable), but should probably stay low.
+
 1. Increment major version number in VERSION
 
-2. Write release notes in CHANGELOG.md
-
-- (**be sure to make backwards incompatible changes very clear**)
+2. Write release notes in CHANGELOG.md (**be sure to make backwards incompatible changes very clear**)
 
 3. Merge from Feature-freeze to master
 
