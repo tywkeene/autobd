@@ -2,6 +2,8 @@
 
 source VERSION
 
+set -e
+
 function ask_yes_or_no() {
     read -p "$1 (y/n): "
     case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
@@ -14,21 +16,32 @@ function bump_major(){
     echo "Version is: $(($MAJOR+1)).$MINOR.$PATCH"
     if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
         sed -i "s/MAJOR=.*/MAJOR=$(($MAJOR + 1))/" VERSION
+        sed -i "s/MINOR=.*/MINOR=0/" VERSION
+        sed -i "s/PATCH=.*/PATCH=0/" VERSION
     fi
 }
 
 function bump_minor(){
     echo "Version is: $MAJOR.$(($MINOR+1)).$PATCH"
-    sed -i "s/MINOR=.*/MINOR=$(($MINOR + 1))/" VERSION
+    if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
+        sed -i "s/MINOR=.*/MINOR=$(($MINOR + 1))/" VERSION
+        sed -i "s/PATCH=.*/PATCH=0/" VERSION
+    fi
 }
 
 function bump_patch(){
     echo "Version is: $MAJOR.$MINOR.$(($PATCH+1))"
-    sed -i "s/PATCH=.*/PATCH=$(($PATCH + 1))/" VERSION
+    if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
+        sed -i "s/PATCH=.*/PATCH=$(($PATCH + 1))/" VERSION
+    fi
+}
+
+function write_release_notes(){
+    $EDITOR CHANGELOG.md
 }
 
 function usage(){
-        printf "Usage: $0 -M [major] -m [minor] -p [patch] -h [print this message]\n"
+    printf "Usage: $0 -M [major] -m [minor] -p [patch] -h [print this message]\n"
 }
 
 if [ -z "$1" ]; then
@@ -41,10 +54,13 @@ while getopts "hmMp" opt; do
         h) usage
             ;;
         m) bump_minor
+            write_release_notes
             ;;
         M) bump_major
+            write_release_notes
             ;;
         p) bump_patch
+            write_release_notes
             ;;
     esac
 done
