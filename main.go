@@ -5,11 +5,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/node"
-	"github.com/tywkeene/autobd/nodelist"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
-	"net/http"
 	"os"
 	"runtime"
 )
@@ -23,16 +21,6 @@ func init() {
 	printLogo()
 	err := os.Chdir(options.Config.Root)
 	utils.HandlePanic(err)
-
-	if options.Config.RunNode == false {
-		err := nodelist.ReadNodeList(options.Config.NodeListFile)
-		utils.HandleError(err, utils.ErrorActionWarn)
-
-		nodelist.InitializeNodeList()
-		go api.StartHeartBeatTracker()
-
-		api.SetupRoutes()
-	}
 }
 
 func printLogo() {
@@ -62,21 +50,16 @@ func printLogo() {
 }
 
 func main() {
-	if options.Config.RunNode == true {
-		localNode := node.InitNode(options.Config.NodeConfig)
-		err := localNode.UpdateLoop()
-		utils.HandlePanic(err)
-	}
 	if options.Config.Cores > runtime.NumCPU() {
 		log.Error("Requested processor value greater than number of actual processors, using default")
 	} else {
 		runtime.GOMAXPROCS(options.Config.Cores)
 	}
-	log.Printf("Serving '%s' on port %s", options.Config.Root, options.Config.ApiPort)
-	if options.Config.Ssl == true {
-		log.Infof("Using certificate (%s) and key (%s) for SSL\n", options.Config.Cert, options.Config.Key)
-		log.Panic(http.ListenAndServeTLS(":"+options.Config.ApiPort, options.Config.Cert, options.Config.Key, nil))
+	if options.Config.RunNode == true {
+		localNode := node.InitNode(options.Config.NodeConfig)
+		err := localNode.UpdateLoop()
+		utils.HandlePanic(err)
 	} else {
-		log.Panic(http.ListenAndServe(":"+options.Config.ApiPort, nil))
+		api.Launch()
 	}
 }
