@@ -13,7 +13,8 @@ function ask_yes_or_no() {
 }
 
 function bump_major(){
-    echo "Version is: $(($MAJOR+1)).$MINOR.$PATCH"
+    NEW_VERSION=$(($MAJOR+1)).0.0
+    echo "Version is: $NEW_VERSION"
     if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
         sed -i "s/MAJOR=.*/MAJOR=$(($MAJOR + 1))/" VERSION
         sed -i "s/MINOR=.*/MINOR=0/" VERSION
@@ -22,7 +23,8 @@ function bump_major(){
 }
 
 function bump_minor(){
-    echo "Version is: $MAJOR.$(($MINOR+1)).$PATCH"
+    NEW_VERSION=$MAJOR.$(($MINOR+1)).0
+    echo "Version is: $NEW_VERSION"
     if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
         sed -i "s/MINOR=.*/MINOR=$(($MINOR + 1))/" VERSION
         sed -i "s/PATCH=.*/PATCH=0/" VERSION
@@ -30,14 +32,15 @@ function bump_minor(){
 }
 
 function bump_patch(){
-    echo "Version is: $MAJOR.$MINOR.$(($PATCH+1))"
+    NEW_VERSION=$MAJOR.$MINOR.$(($PATCH+1))
+    echo "Version is: $NEW_VERSION"
     if [[ "yes" == $(ask_yes_or_no "is this what you want?") ]]; then
         sed -i "s/PATCH=.*/PATCH=$(($PATCH + 1))/" VERSION
     fi
 }
 
 function generate_changelog(){
-    echo "# $(date +%c) Version: $VERSION" >> CHANGELOG.md
+    echo "## $(date +%c) Version: $NEW_VERSION" >> CHANGELOG.md
 }
 
 function usage(){
@@ -55,12 +58,15 @@ while getopts "hmMp" opt; do
             ;;
         m) bump_minor
             generate_changelog
+            exit 0
             ;;
         M) bump_major
             generate_changelog
+            exit 0
             ;;
         p) bump_patch
             generate_changelog
+            exit 0
             ;;
     esac
 done

@@ -186,11 +186,7 @@ func (connection *Connection) RequestIndex(dir string, uuid string) ([]byte, err
 	queryValues := make(map[string]string)
 	queryValues["dir"] = dir
 	queryValues["uuid"] = uuid
-	response, err := connection.Get("/index", http.StatusOK, queryValues)
-	if err != nil {
-		panic(err)
-	}
-	return response, err
+	return connection.Get("/index", http.StatusOK, queryValues)
 }
 
 func (connection *Connection) RequestSyncDir(dir string, uuid string) error {
