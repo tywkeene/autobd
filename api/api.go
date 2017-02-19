@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/tywkeene/autobd/index"
+	"github.com/tywkeene/autobd/cache"
 	"github.com/tywkeene/autobd/nodelist"
 	"github.com/tywkeene/autobd/options"
 	"github.com/tywkeene/autobd/packing"
@@ -109,7 +109,7 @@ func ServeIndex(w http.ResponseWriter, r *http.Request) {
 		errHandle.Handle(fmt.Errorf("Must specify directory"), http.StatusBadRequest, utils.ErrorActionErr)
 		return
 	}
-	dirIndex, err := index.GetIndex(dir)
+	dirIndex, err := cache.Get(dir)
 	if errHandle.Handle(err, http.StatusInternalServerError, utils.ErrorActionErr) == true {
 		return
 	}
@@ -329,6 +329,9 @@ func Launch() {
 		utils.HandleError(err, utils.ErrorActionWarn)
 		nodelist.InitializeNodeList()
 	}
+	err := cache.Initialize("./")
+	utils.HandlePanic(err)
+
 	SetupRoutes()
 	go StartHeartBeatTracker()
 

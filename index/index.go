@@ -55,7 +55,7 @@ func GetChecksum(path string) string {
 	return sum
 }
 
-func newIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Index {
+func NewIndex(name string, size int64, modtime time.Time, mode os.FileMode, isDir bool) *Index {
 	var checksum string
 	if isDir == false {
 		checksum = GetChecksum(name)
@@ -79,7 +79,7 @@ func GenerateIndex(dirPath string) (map[string]*Index, error) {
 			continue
 		}
 		childPath := path.Join(dirPath, child.Name())
-		index[childPath] = newIndex(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
+		index[childPath] = NewIndex(childPath, child.Size(), child.ModTime(), child.Mode(), child.IsDir())
 		if child.IsDir() == true {
 			childContent, err := GenerateIndex(childPath)
 			if err != nil {
@@ -91,18 +91,27 @@ func GenerateIndex(dirPath string) (map[string]*Index, error) {
 	return index, nil
 }
 
+func ValidateDirectory(dirPath string) (string, error) {
+	dirStat, err := os.Lstat(dirPath)
+	if err != nil {
+		return "", err
+	}
+	if dirStat.IsDir() == false {
+		return "", fmt.Errorf("Not a directory")
+	}
+	if dirPath == "/" || dirPath == "../" ||
+		dirPath == ".." || dirPath == "." {
+		dirPath = "./"
+	}
+	return dirPath, nil
+}
+
 //GetIndex validates dirPath, and calls GenerateIndex on it
 func GetIndex(dirPath string) (map[string]*Index, error) {
 	defer utils.TimeTrack(time.Now(), "index/GetIndex()")
-	dirStat, err := os.Lstat(dirPath)
-	if utils.HandleError(err, utils.ErrorActionErr) == true {
+	validPath, err := ValidateDirectory(dirPath)
+	if err != nil {
 		return nil, err
 	}
-	if dirStat.IsDir() == false {
-		return nil, fmt.Errorf("Not a directory")
-	}
-	if dirPath == "/" || dirPath == "../" || dirPath == ".." {
-		dirPath = "./"
-	}
-	return GenerateIndex(dirPath)
+	return GenerateIndex(validPath)
 }
