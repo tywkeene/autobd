@@ -36,8 +36,8 @@ function bump_patch(){
     fi
 }
 
-function write_release_notes(){
-    $EDITOR CHANGELOG.md
+function generate_changelog(){
+    echo "# $(date +%c) Version: $VERSION" >> CHANGELOG.md
 }
 
 function usage(){
@@ -54,13 +54,13 @@ while getopts "hmMp" opt; do
         h) usage
             ;;
         m) bump_minor
-            write_release_notes
+            generate_changelog
             ;;
         M) bump_major
-            write_release_notes
+            generate_changelog
             ;;
         p) bump_patch
-            write_release_notes
+            generate_changelog
             ;;
     esac
 done
