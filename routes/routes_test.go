@@ -1,13 +1,13 @@
-package api_test
+package routes_test
 
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/index"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/nodelist"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/routes"
 	"github.com/tywkeene/autobd/utils"
 	"io/ioutil"
 	"net/http"
@@ -29,7 +29,7 @@ func getResponseFromBody(t *testing.T, recorder *httptest.ResponseRecorder) stri
 //Ensure the server serves gzip encoded content if we say we can handle it
 func TestGzip(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.GzipHandler(api.ServeServerVer))
+	handler := http.HandlerFunc(routes.GzipHandler(routes.ServeServerVer))
 
 	req, err := http.NewRequest("GET", "/version", nil)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestServeIndexNoUUID(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeIndex)
+	handler := http.HandlerFunc(routes.ServeIndex)
 
 	handler.ServeHTTP(recorder, req)
 
@@ -84,7 +84,7 @@ func TestServeIndexNoUUID(t *testing.T) {
 //Ensure the /index endpoint fails if we don't specify a UUID but no directory to index
 func TestServeIndexNoDir(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeIndex)
+	handler := http.HandlerFunc(routes.ServeIndex)
 
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
@@ -133,7 +133,7 @@ func TestServeIndexNoDir(t *testing.T) {
 //Ensure the /index endpoint succeeds specify a UUID and directory to index
 func TestServeIndex(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeIndex)
+	handler := http.HandlerFunc(routes.ServeIndex)
 
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
@@ -181,7 +181,7 @@ func TestServeIndex(t *testing.T) {
 
 func BenchmarkServeIndex(b *testing.B) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeIndex)
+	handler := http.HandlerFunc(routes.ServeIndex)
 
 	options.Config.HeartBeatTrackInterval = "1s"
 	options.Config.HeartBeatOffline = "3s"
@@ -209,7 +209,7 @@ func BenchmarkServeIndex(b *testing.B) {
 //Ensure we can get a version from the server
 func TestServeServerVer(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeServerVer)
+	handler := http.HandlerFunc(routes.ServeServerVer)
 
 	req, err := http.NewRequest("GET", "/version", nil)
 	if err != nil {
@@ -226,7 +226,7 @@ func TestServeServerVer(t *testing.T) {
 //Ensure we get content when trying to sync a file
 func TestServeSync(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ServeSync)
+	handler := http.HandlerFunc(routes.ServeSync)
 
 	nodelist.AddNode("test", &nodelist.Node{
 		Address:    "0.0.0.0",
@@ -239,7 +239,7 @@ func TestServeSync(t *testing.T) {
 		},
 	})
 
-	req, err := http.NewRequest("GET", "/sync?grab=api.go&uuid=test", nil)
+	req, err := http.NewRequest("GET", "/sync?grab=routes.go&uuid=test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +257,7 @@ func TestServeSync(t *testing.T) {
 //Ensure we get a consistent list of nodes
 func TestListNodes(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.ListNodes)
+	handler := http.HandlerFunc(routes.ListNodes)
 	nodelist.AddNode("test0", &nodelist.Node{
 		Address:    "0.0.0.0",
 		LastOnline: time.Now().Format(time.RFC850),
@@ -329,7 +329,7 @@ func TestListNodes(t *testing.T) {
 //Ensure we can identify as a node with the server
 func TestIdentify(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.Identify)
+	handler := http.HandlerFunc(routes.Identify)
 
 	nodelist.CurrentNodes = nil
 
@@ -361,7 +361,7 @@ func TestIdentify(t *testing.T) {
 //Ensure the server properly handles heartbeats from a node
 func TestHeartBeat(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(api.HeartBeat)
+	handler := http.HandlerFunc(routes.HeartBeat)
 
 	nodelist.AddNode("test", &nodelist.Node{
 		Address:    "0.0.0.0",

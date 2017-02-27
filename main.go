@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/tywkeene/autobd/api"
 	"github.com/tywkeene/autobd/node"
 	"github.com/tywkeene/autobd/options"
+	"github.com/tywkeene/autobd/server"
 	"github.com/tywkeene/autobd/utils"
 	"github.com/tywkeene/autobd/version"
 	"os"
@@ -60,6 +60,6 @@ func main() {
 		err := localNode.UpdateLoop()
 		utils.HandlePanic(err)
 	} else {
-		api.Launch()
+		server.Launch()
 	}
 }
