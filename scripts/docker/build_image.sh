@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 build_image(){
     echo "Building $1..."

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #Required to install glide, just make sure
 if [ ! -d "$GOPATH/bin" ]; then

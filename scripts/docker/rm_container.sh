@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 rm_container(){
     if docker ps -f name='$1' &> /dev/null; then

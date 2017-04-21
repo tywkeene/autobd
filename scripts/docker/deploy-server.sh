@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 bash ./scripts/docker/rm_container.sh "autobd-server"
 bash ./scripts/docker/build_image.sh "server"
